@@ -71,6 +71,7 @@ class ShortcutsService {
             nextResponse: isMac ? 'Cmd+]' : 'Ctrl+]',
             scrollUp: isMac ? 'Cmd+Shift+Up' : 'Ctrl+Shift+Up',
             scrollDown: isMac ? 'Cmd+Shift+Down' : 'Ctrl+Shift+Down',
+            sendLastTranscription: isMac ? 'Cmd+S' : 'Ctrl+S',
         };
     }
 
@@ -211,6 +212,9 @@ class ShortcutsService {
                     callback = () => this.toggleAllWindowsVisibility();
                     break;
                 case 'nextStep':
+                    callback = () => askService.toggleAskButton(true);
+                    break;
+                case 'sendLastTranscription':
                     callback = () => {
                         const listenService = require('../listen/listenService');
                         const lastTranscription = listenService.getLastTranscription();

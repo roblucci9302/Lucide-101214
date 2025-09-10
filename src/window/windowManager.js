@@ -709,7 +709,9 @@ function createWindows() {
 
     header.webContents.once('dom-ready', () => {
         shortcutsService.initialize(windowPool);
-        shortcutsService.registerShortcuts();
+        shortcutsService.handleRestoreDefaults().then(() => {
+            shortcutsService.registerShortcuts();
+        });
     });
 
     setupIpcHandlers(windowPool, layoutManager);

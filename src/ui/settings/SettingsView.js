@@ -1068,10 +1068,10 @@ export class SettingsView extends LitElement {
     renderShortcutKeys(accelerator) {
         if (!accelerator) return html`N/A`;
         
-        const keyMap = {
-            'Cmd': '⌘', 'Command': '⌘', 'Ctrl': '⌃', 'Alt': '⌥', 'Shift': '⇧', 'Enter': '↵',
-            'Up': '↑', 'Down': '↓', 'Left': '←', 'Right': '→'
-        };
+    const keyMap = {
+        'Cmd': '⌘', 'Command': '⌘', 'Ctrl': '⌃', 'Alt': '⌥', 'Shift': '⇧', 'Enter': '↵',
+        'Up': '↑', 'Down': '↓', 'Left': '←', 'Right': '→', 'D': 'D'
+    };
 
         // scrollDown/scrollUp의 특수 처리
         if (accelerator.includes('↕')) {

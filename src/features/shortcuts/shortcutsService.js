@@ -52,7 +52,11 @@ class ShortcutsService {
     }
 
     async handleRestoreDefaults() {
+        const shortcutsRepository = require('./repositories');
+        await shortcutsRepository.deleteAllKeybinds();
         const defaults = this.getDefaultKeybinds();
+        await this.saveKeybinds(defaults);
+        await this.registerShortcuts(); // Force une mise à jour des raccourcis
         return defaults;
     }
 
@@ -63,7 +67,7 @@ class ShortcutsService {
             moveDown: isMac ? 'Cmd+Down' : 'Ctrl+Down',
             moveLeft: isMac ? 'Cmd+Left' : 'Ctrl+Left',
             moveRight: isMac ? 'Cmd+Right' : 'Ctrl+Right',
-            toggleVisibility: isMac ? 'Cmd+\\' : 'Ctrl+\\',
+            toggleVisibility: isMac ? 'Cmd+D' : 'Ctrl+D',
             toggleClickThrough: isMac ? 'Cmd+M' : 'Ctrl+M',
             nextStep: isMac ? 'Cmd+Enter' : 'Ctrl+Enter',
             manualScreenshot: isMac ? 'Cmd+Shift+S' : 'Ctrl+Shift+S',

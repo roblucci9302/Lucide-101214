@@ -42,7 +42,19 @@ function upsertKeybinds(keybinds) {
     }
 }
 
+function deleteAllKeybinds() {
+    const db = sqliteClient.getDb();
+    try {
+        db.prepare('DELETE FROM shortcuts').run();
+        console.log('[DB] All keybinds deleted');
+    } catch (error) {
+        console.error('[DB] Failed to delete keybinds:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     getAllKeybinds,
-    upsertKeybinds
+    upsertKeybinds,
+    deleteAllKeybinds
 }; 

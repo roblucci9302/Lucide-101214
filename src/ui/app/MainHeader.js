@@ -601,6 +601,7 @@ export class MainHeader extends LitElement {
             'Escape': '⎋',
             'Up': '↑', 'Down': '↓', 'Left': '←', 'Right': '→',
             '\\': html`<svg viewBox="0 0 6 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:6px; height:12px;"><path d="M1.5 1.3L5.1 10.6" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+            'D': 'D',
         };
 
         const keys = accelerator.split('+');

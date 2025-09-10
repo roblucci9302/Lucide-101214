@@ -12,6 +12,7 @@ class ListenService {
         this.summaryService = new SummaryService();
         this.currentSessionId = null;
         this.isInitializingSession = false;
+        this.lastTranscription = '';
 
         this.setupServiceCallbacks();
         console.log('[ListenService] Service instance created.');
@@ -104,6 +105,11 @@ class ListenService {
         
         // Add to summary service for analysis
         this.summaryService.addConversationTurn(speaker, text);
+
+        // Sauvegarder la dernière transcription si c'est l'utilisateur qui parle
+        if (speaker === 'Me') {
+            this.lastTranscription = text;
+        }
     }
 
     async saveConversationTurn(speaker, transcription) {
@@ -265,6 +271,10 @@ class ListenService {
 
     getConversationHistory() {
         return this.summaryService.getConversationHistory();
+    }
+
+    getLastTranscription() {
+        return this.lastTranscription;
     }
 
     _createHandler(asyncFn, successMessage, errorMessage) {

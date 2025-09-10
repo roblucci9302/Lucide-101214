@@ -211,7 +211,13 @@ class ShortcutsService {
                     callback = () => this.toggleAllWindowsVisibility();
                     break;
                 case 'nextStep':
-                    callback = () => askService.toggleAskButton(true);
+                    callback = () => {
+                        const listenService = require('../listen/listenService');
+                        const lastTranscription = listenService.getLastTranscription();
+                        if (lastTranscription) {
+                            askService.sendMessage(lastTranscription);
+                        }
+                    };
                     break;
                 case 'scrollUp':
                     callback = () => {

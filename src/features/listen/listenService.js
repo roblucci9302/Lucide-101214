@@ -277,6 +277,10 @@ class ListenService {
         return this.lastTranscription;
     }
 
+    getRecentTranscriptions(count = 3) {
+        return this.summaryService.getConversationHistory().slice(-count);
+    }
+
     _createHandler(asyncFn, successMessage, errorMessage) {
         return async (...args) => {
             try {

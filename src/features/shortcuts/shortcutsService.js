@@ -214,8 +214,9 @@ class ShortcutsService {
                     callback = () => {
                         const listenService = require('../listen/listenService');
                         const lastTranscription = listenService.getLastTranscription();
+                        const recentContext = listenService.getRecentTranscriptions(3);
                         if (lastTranscription) {
-                            askService.sendMessage(lastTranscription);
+                            askService.sendMessage(lastTranscription, recentContext);
                         }
                     };
                     break;

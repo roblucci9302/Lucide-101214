@@ -1253,7 +1253,7 @@ export class SettingsView extends LitElement {
                         <div class="provider-key-group">
                             <label for="key-input-${id}">${config.name} API Key</label>
                             <input type="password" id="key-input-${id}"
-                                placeholder=${loggedIn ? "Using Pickle's Key" : `Enter ${config.name} API Key`} 
+                                placeholder=${loggedIn ? "Using Lucide's Key" : `Enter ${config.name} API Key`} 
                                 .value=${this.apiKeys[id] || ''}
                             >
                             <div class="key-buttons">

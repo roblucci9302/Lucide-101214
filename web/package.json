@@ -6,3 +6,4 @@
     "build": "echo 'Test build successful' && mkdir -p out && echo 'Test content' > out/index.html"
   }
 }
+

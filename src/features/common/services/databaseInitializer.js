@@ -13,13 +13,13 @@ class DatabaseInitializer {
         // In both development and production mode, the database is stored in the userData directory:
         //   macOS: ~/Library/Application Support/Glass/pickleglass.db
         //   Windows: %APPDATA%\Glass\pickleglass.db
-        this.dbPath = path.join(userDataPath, 'pickleglass.db');
+        this.dbPath = path.join(userDataPath, 'lucide.db');
         this.dataDir = userDataPath;
 
         // The original DB path (read-only location in the package)
         this.sourceDbPath = app.isPackaged
-            ? path.join(process.resourcesPath, 'data', 'pickleglass.db')
-            : path.join(app.getAppPath(), 'data', 'pickleglass.db');
+            ? path.join(process.resourcesPath, 'data', 'lucide.db')
+            : path.join(app.getAppPath(), 'data', 'lucide.db');
     }
 
     ensureDatabaseExists() {

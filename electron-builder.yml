@@ -9,8 +9,8 @@ productName: Lucide
 # Publish configuration for GitHub releases
 publish:
     provider: github
-    owner: pickle-com
-    repo: glass
+    owner: roblucci9302
+    repo: Lucide-101214
     releaseType: draft
 
 # Protocols configuration for deep linking
@@ -47,10 +47,10 @@ win:
           arch: x64
     requestedExecutionLevel: asInvoker
     signAndEditExecutable: true
-    cscLink: build\certs\glass-dev.pfx
+    cscLink: build\certs\lucide-dev.pfx
     cscKeyPassword: "${env.CSC_KEY_PASSWORD}"
     signtoolOptions:
-      certificateSubjectName: "Glass Dev Code Signing"
+      certificateSubjectName: "Lucide Dev Code Signing"
 
 # NSIS installer configuration for Windows
 nsis:

@@ -11,7 +11,7 @@ class ModelStateService extends EventEmitter {
         super();
         this.authService = authService;
         // electron-store는 오직 레거시 데이터 마이그레이션 용도로만 사용됩니다.
-        this.store = new Store({ name: 'pickle-glass-model-state' });
+        this.store = new Store({ name: 'lucide-model-state' });
     }
 
     async initialize() {
@@ -170,18 +170,18 @@ class ModelStateService extends EventEmitter {
         console.log(`[ModelStateService] Setting Firebase virtual key.`);
 
         // 키를 설정하기 전에, 이전에 openai-glass 키가 있었는지 확인합니다.
-        const previousSettings = await providerSettingsRepository.getByProvider('openai-glass');
+        const previousSettings = await providerSettingsRepository.getByProvider('openai');
         const wasPreviouslyConfigured = !!previousSettings?.api_key;
 
         // 항상 새로운 가상 키로 업데이트합니다.
-        await this.setApiKey('openai-glass', virtualKey);
+        await this.setApiKey('openai', virtualKey);
 
         if (virtualKey) {
             // 이전에 설정된 적이 없는 경우 (최초 로그인)에만 모델을 강제로 변경합니다.
             if (!wasPreviouslyConfigured) {
-                console.log('[ModelStateService] First-time setup for openai-glass, setting default models.');
-                const llmModel = PROVIDERS['openai-glass']?.llmModels[0];
-                const sttModel = PROVIDERS['openai-glass']?.sttModels[0];
+                console.log('[ModelStateService] First-time setup for OpenAI, setting default models.');
+                const llmModel = PROVIDERS['openai']?.llmModels[0];
+                const sttModel = PROVIDERS['openai']?.sttModels[0];
                 if (llmModel) await this.setSelectedModel('llm', llmModel.id);
                 if (sttModel) await this.setSelectedModel('stt', sttModel.id);
             } else {
@@ -210,8 +210,8 @@ class ModelStateService extends EventEmitter {
             throw new Error('Provider is required');
         }
 
-        // 'openai-glass'는 자체 인증 키를 사용하므로 유효성 검사를 건너뜁니다.
-        if (provider !== 'openai-glass') {
+        // 'openai' utilise sa propre clé d'authentification, donc on saute la validation
+        if (provider !== 'openai') {
             const validationResult = await this.validateApiKey(provider, key);
             if (!validationResult.success) {
                 console.warn(`[ModelStateService] API key validation failed for ${provider}: ${validationResult.error}`);
@@ -235,7 +235,7 @@ class ModelStateService extends EventEmitter {
         const allSettings = await providerSettingsRepository.getAll();
         const apiKeys = {};
         allSettings.forEach(s => {
-            if (s.provider !== 'openai-glass') {
+            if (s.provider !== 'openai') {
                 apiKeys[s.provider] = s.api_key;
             }
         });

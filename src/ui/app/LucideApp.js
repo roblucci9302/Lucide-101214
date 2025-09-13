@@ -53,7 +53,7 @@ export class LucideApp extends LitElement {
         const urlParams = new URLSearchParams(window.location.search);
         this.currentView = urlParams.get('view') || 'listen';
         this.currentResponseIndex = -1;
-        this.selectedProfile = localStorage.getItem('selectedProfile') || 'interview';
+        this.selectedProfile = localStorage.getItem('selectedProfile') || 'lucide_assistant';
         
         // Language format migration for legacy users
         let lang = localStorage.getItem('selectedLanguage') || 'en';

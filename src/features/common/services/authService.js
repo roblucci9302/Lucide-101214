@@ -196,7 +196,7 @@ class AuthService {
         }
         return {
             uid: this.currentUserId, // returns 'default_user'
-            email: 'contact@pickle.com',
+            email: 'contact@lucide.app',
             displayName: 'Default User',
             mode: 'local',
             isLoggedIn: false,

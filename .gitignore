@@ -41,6 +41,11 @@ logs/
 
 # Testing
 coverage/
+test/
+
+# Backups and temporary files
+backups/
+scripts/
 
 # Misc
 .DS_Store

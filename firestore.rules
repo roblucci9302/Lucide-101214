@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fonction pour vérifier si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Autoriser l'accès aux utilisateurs authentifiés (temporaire pour les tests)
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Note: Ces règles sont temporaires pour les tests
+    // À remplacer par des règles plus strictes en production :
+    // match /users/{userId} {
+    //   allow read, write: if request.auth.uid == userId;
+    // }
+  }
+}

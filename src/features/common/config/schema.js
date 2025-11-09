@@ -19,7 +19,13 @@ const LATEST_SCHEMA = {
             { name: 'started_at', type: 'INTEGER' },
             { name: 'ended_at', type: 'INTEGER' },
             { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' },
-            { name: 'updated_at', type: 'INTEGER' }
+            { name: 'updated_at', type: 'INTEGER' },
+            // Phase 2: Enhanced conversation history
+            { name: 'tags', type: 'TEXT' }, // JSON array: ["work", "personal", etc.]
+            { name: 'description', type: 'TEXT' }, // Optional longer description
+            { name: 'agent_profile', type: 'TEXT' }, // Which Lucy profile was used
+            { name: 'message_count', type: 'INTEGER DEFAULT 0' }, // Number of messages
+            { name: 'auto_title', type: 'INTEGER DEFAULT 1' } // 1 if title auto-generated
         ]
     },
     transcripts: {

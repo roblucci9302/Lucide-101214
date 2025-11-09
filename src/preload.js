@@ -267,6 +267,17 @@ contextBridge.exposeInMainWorld('api', {
     removeOnLocalAIInstallationComplete: (callback) => ipcRenderer.removeListener('localai:installation-complete', callback)
   },
 
+  // src/ui/history/HistoryView.js - Phase 2: Conversation History
+  history: {
+    getAllSessions: (options) => ipcRenderer.invoke('history:get-all-sessions', options),
+    searchSessions: (query, filters) => ipcRenderer.invoke('history:search-sessions', query, filters),
+    getSessionMessages: (sessionId) => ipcRenderer.invoke('history:get-session-messages', sessionId),
+    getStats: () => ipcRenderer.invoke('history:get-stats'),
+    updateMetadata: (sessionId, metadata) => ipcRenderer.invoke('history:update-metadata', sessionId, metadata),
+    deleteSession: (sessionId) => ipcRenderer.invoke('history:delete-session', sessionId),
+    generateTitle: (sessionId) => ipcRenderer.invoke('history:generate-title', sessionId)
+  },
+
   // src/ui/settings/ShortCutSettingsView.js
   shortcutSettingsView: {
     // Shortcut Management

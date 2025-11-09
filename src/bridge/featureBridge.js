@@ -12,6 +12,7 @@ const askService = require('../features/ask/askService');
 const listenService = require('../features/listen/listenService');
 const permissionService = require('../features/common/services/permissionService');
 const encryptionService = require('../features/common/services/encryptionService');
+const agentProfileService = require('../features/common/services/agentProfileService');
 
 module.exports = {
   // Renderer로부터의 요청을 수신하고 서비스로 전달
@@ -35,6 +36,15 @@ module.exports = {
     ipcMain.handle('shortcut:openShortcutSettingsWindow', async () => await shortcutsService.openShortcutSettingsWindow());
     ipcMain.handle('shortcut:saveShortcuts', async (event, newKeybinds) => await shortcutsService.handleSaveShortcuts(newKeybinds));
     ipcMain.handle('shortcut:toggleAllWindowsVisibility', async () => await shortcutsService.toggleAllWindowsVisibility());
+
+    // Agent Profiles
+    ipcMain.handle('agent:get-available-profiles', () => agentProfileService.getAvailableProfiles());
+    ipcMain.handle('agent:get-active-profile', () => agentProfileService.getCurrentProfile());
+    ipcMain.handle('agent:set-active-profile', async (event, profileId) => {
+        const userId = authService.getCurrentUserId();
+        const success = await agentProfileService.setActiveProfile(userId, profileId);
+        return { success };
+    });
 
     // Permissions
     ipcMain.handle('check-system-permissions', async () => await permissionService.checkSystemPermissions());

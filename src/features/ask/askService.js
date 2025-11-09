@@ -22,6 +22,7 @@ const util = require('util');
 const execFile = util.promisify(require('child_process').execFile);
 const { desktopCapturer } = require('electron');
 const modelStateService = require('../common/services/modelStateService');
+const agentProfileService = require('../common/services/agentProfileService');
 
 // Try to load sharp, but don't fail if it's not available
 let sharp;
@@ -254,7 +255,11 @@ class AskService {
 
             const conversationHistory = this._formatConversationForPrompt(conversationHistoryRaw);
 
-            const systemPrompt = getSystemPrompt('pickle_glass_analysis', conversationHistory, false);
+            // Get the current active agent profile
+            const activeProfile = agentProfileService.getCurrentProfile();
+            console.log(`[AskService] Using agent profile: ${activeProfile}`);
+
+            const systemPrompt = getSystemPrompt(activeProfile, conversationHistory, false);
 
             const messages = [
                 { role: 'system', content: systemPrompt },

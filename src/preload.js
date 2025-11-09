@@ -234,6 +234,11 @@ contextBridge.exposeInMainWorld('api', {
     toggleContentProtection: () => ipcRenderer.invoke('toggle-content-protection'),
     getCurrentShortcuts: () => ipcRenderer.invoke('settings:getCurrentShortcuts'),
     openShortcutSettingsWindow: () => ipcRenderer.invoke('shortcut:openShortcutSettingsWindow'),
+
+    // Agent Profile Management
+    getAvailableProfiles: () => ipcRenderer.invoke('agent:get-available-profiles'),
+    getActiveProfile: () => ipcRenderer.invoke('agent:get-active-profile'),
+    setActiveProfile: (profileId) => ipcRenderer.invoke('agent:set-active-profile', profileId),
     
     // Window Management
     moveWindowStep: (direction) => ipcRenderer.invoke('move-window-step', direction),

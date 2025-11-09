@@ -278,6 +278,16 @@ contextBridge.exposeInMainWorld('api', {
     generateTitle: (sessionId) => ipcRenderer.invoke('history:generate-title', sessionId)
   },
 
+  // Phase 3: Workflows - Quick Actions
+  workflows: {
+    getCurrentProfileWorkflows: () => ipcRenderer.invoke('workflows:get-current-profile-workflows'),
+    getWorkflowsMetadata: (profileId) => ipcRenderer.invoke('workflows:get-workflows-metadata', profileId),
+    getWorkflow: (profileId, workflowId) => ipcRenderer.invoke('workflows:get-workflow', profileId, workflowId),
+    buildPrompt: (profileId, workflowId, formData) => ipcRenderer.invoke('workflows:build-prompt', profileId, workflowId, formData),
+    getFormFields: (profileId, workflowId) => ipcRenderer.invoke('workflows:get-form-fields', profileId, workflowId),
+    validateForm: (profileId, workflowId, formData) => ipcRenderer.invoke('workflows:validate-form', profileId, workflowId, formData)
+  },
+
   // src/ui/settings/ShortCutSettingsView.js
   shortcutSettingsView: {
     // Shortcut Management

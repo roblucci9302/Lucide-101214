@@ -14,6 +14,7 @@ const permissionService = require('../features/common/services/permissionService
 const encryptionService = require('../features/common/services/encryptionService');
 const agentProfileService = require('../features/common/services/agentProfileService');
 const conversationHistoryService = require('../features/common/services/conversationHistoryService');
+const workflowService = require('../features/common/services/workflowService');
 
 module.exports = {
   // Renderer로부터의 요청을 수신하고 서비스로 전달
@@ -71,6 +72,26 @@ module.exports = {
     });
     ipcMain.handle('history:generate-title', async (event, sessionId) => {
         return await conversationHistoryService.generateTitleFromContent(sessionId);
+    });
+
+    // Workflows (Phase 3)
+    ipcMain.handle('workflows:get-current-profile-workflows', () => {
+        return workflowService.getCurrentProfileWorkflows();
+    });
+    ipcMain.handle('workflows:get-workflows-metadata', (event, profileId) => {
+        return workflowService.getProfileWorkflowsMetadata(profileId);
+    });
+    ipcMain.handle('workflows:get-workflow', (event, profileId, workflowId) => {
+        return workflowService.getWorkflow(profileId, workflowId);
+    });
+    ipcMain.handle('workflows:build-prompt', (event, profileId, workflowId, formData) => {
+        return workflowService.buildPrompt(profileId, workflowId, formData);
+    });
+    ipcMain.handle('workflows:get-form-fields', (event, profileId, workflowId) => {
+        return workflowService.getWorkflowFormFields(profileId, workflowId);
+    });
+    ipcMain.handle('workflows:validate-form', (event, profileId, workflowId, formData) => {
+        return workflowService.validateFormData(profileId, workflowId, formData);
     });
 
     // Permissions

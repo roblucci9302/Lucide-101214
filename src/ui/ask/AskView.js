@@ -1,5 +1,6 @@
 import { html, css, LitElement } from '../../ui/assets/lit-core-2.7.4.min.js';
 import { parser, parser_write, parser_end, default_renderer } from '../../ui/assets/smd.js';
+import './QuickActionsPanel.js';
 
 export class AskView extends LitElement {
     static properties = {
@@ -773,6 +774,30 @@ export class AskView extends LitElement {
             this.handleSendText(null, question);
         };
 
+        // Handle workflow selection from QuickActionsPanel
+        this.handleWorkflowSelected = async (event) => {
+            const { workflow } = event.detail;
+            console.log('[AskView] Workflow selected:', workflow.id);
+
+            try {
+                // Get active profile
+                const profileData = await window.api.settingsView.agent.getActiveProfile();
+                const activeProfile = profileData || 'lucide_assistant';
+
+                // Build prompt from workflow template
+                const prompt = await window.api.workflows.buildPrompt(activeProfile, workflow.id, {});
+
+                // Send the workflow prompt
+                if (prompt) {
+                    this.handleSendText(null, prompt);
+                }
+            } catch (error) {
+                console.error('[AskView] Error handling workflow selection:', error);
+            }
+        };
+
+        document.addEventListener('workflow-selected', this.handleWorkflowSelected);
+
         if (window.api) {
             window.api.askView.onShowTextInput(() => {
                 console.log('Show text input signal received');
@@ -814,6 +839,7 @@ export class AskView extends LitElement {
         console.log('📱 AskView disconnectedCallback - IPC 이벤트 리스너 제거');
 
         document.removeEventListener('keydown', this.handleEscKey);
+        document.removeEventListener('workflow-selected', this.handleWorkflowSelected);
 
         if (this.copyTimeout) {
             clearTimeout(this.copyTimeout);
@@ -1379,6 +1405,9 @@ export class AskView extends LitElement {
                 <div class="response-container ${!hasResponse ? 'hidden' : ''}" id="responseContainer">
                     <!-- Content is dynamically generated in updateResponseContent() -->
                 </div>
+
+                <!-- Quick Actions Panel (Phase 3: Workflows) - Only shown when no response -->
+                ${!hasResponse ? html`<quick-actions-panel></quick-actions-panel>` : ''}
 
                 <!-- Text Input Container -->
                 <div class="text-input-container ${!hasResponse ? 'no-response' : ''} ${!this.showTextInput ? 'hidden' : ''}">

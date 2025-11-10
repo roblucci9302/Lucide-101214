@@ -258,13 +258,14 @@ function changeAllWindowsVisibility(windowPool, targetVisibility) {
  * @param {boolean} shouldBeVisible 
  */
 async function handleWindowVisibilityRequest(windowPool, layoutManager, movementManager, name, shouldBeVisible) {
-    console.log(`[WindowManager] Request: set '${name}' visibility to ${shouldBeVisible}`);
-    const win = windowPool.get(name);
+    try {
+        console.log(`[WindowManager] Request: set '${name}' visibility to ${shouldBeVisible}`);
+        const win = windowPool.get(name);
 
-    if (!win || win.isDestroyed()) {
-        console.warn(`[WindowManager] Window '${name}' not found or destroyed.`);
-        return;
-    }
+        if (!win || win.isDestroyed()) {
+            console.warn(`[WindowManager] Window '${name}' not found or destroyed.`);
+            return;
+        }
 
     if (name !== 'settings') {
         const isCurrentlyVisible = win.isVisible();
@@ -401,6 +402,10 @@ async function handleWindowVisibilityRequest(windowPool, layoutManager, movement
             delete otherWindowsLayout[name];
             movementManager.animateLayout(otherWindowsLayout);
         }
+    }
+    } catch (error) {
+        console.error(`[WindowManager] Error handling visibility request for '${name}':`, error);
+        // Graceful degradation - don't crash the app
     }
 }
 
@@ -667,7 +672,6 @@ function createWindows() {
             contextIsolation: true,
             preload: path.join(__dirname, '../preload.js'),
             backgroundThrottling: false,
-            webSecurity: false,
             enableRemoteModule: false,
             // Ensure proper rendering and prevent pixelation
             experimentalFeatures: false,

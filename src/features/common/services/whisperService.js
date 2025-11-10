@@ -513,7 +513,28 @@ class WhisperService extends EventEmitter {
         if (!this.installState.isInitialized || !this.modelsDir) {
             throw new Error('WhisperService is not initialized. Call initialize() first.');
         }
-        return path.join(this.modelsDir, `${modelId}.bin`);
+
+        // Security: Validate modelId to prevent path traversal
+        if (!modelId || typeof modelId !== 'string') {
+            throw new Error('Invalid model ID');
+        }
+
+        // Only allow alphanumeric, hyphen, and underscore characters
+        if (!/^[a-zA-Z0-9_-]+$/.test(modelId)) {
+            throw new Error('Invalid model ID format. Only alphanumeric characters, hyphens, and underscores are allowed.');
+        }
+
+        const modelPath = path.join(this.modelsDir, `${modelId}.bin`);
+
+        // Verify the resolved path is within modelsDir
+        const resolvedPath = path.resolve(modelPath);
+        const resolvedModelsDir = path.resolve(this.modelsDir);
+
+        if (!resolvedPath.startsWith(resolvedModelsDir + path.sep) && resolvedPath !== resolvedModelsDir) {
+            throw new Error('Path traversal detected');
+        }
+
+        return modelPath;
     }
 
     async getWhisperPath() {
@@ -521,16 +542,21 @@ class WhisperService extends EventEmitter {
     }
 
     async saveAudioToTemp(audioBuffer, sessionId = '') {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substr(2, 6);
-        const sessionPrefix = sessionId ? `${sessionId}_` : '';
-        const tempFile = path.join(this.tempDir, `audio_${sessionPrefix}${timestamp}_${random}.wav`);
-        
-        const wavHeader = this.createWavHeader(audioBuffer.length);
-        const wavBuffer = Buffer.concat([wavHeader, audioBuffer]);
-        
-        await fsPromises.writeFile(tempFile, wavBuffer);
-        return tempFile;
+        try {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 6);
+            const sessionPrefix = sessionId ? `${sessionId}_` : '';
+            const tempFile = path.join(this.tempDir, `audio_${sessionPrefix}${timestamp}_${random}.wav`);
+
+            const wavHeader = this.createWavHeader(audioBuffer.length);
+            const wavBuffer = Buffer.concat([wavHeader, audioBuffer]);
+
+            await fsPromises.writeFile(tempFile, wavBuffer);
+            return tempFile;
+        } catch (error) {
+            console.error('[WhisperService] Failed to save audio to temp file:', error);
+            throw new Error(`Failed to save audio: ${error.message}`);
+        }
     }
 
     createWavHeader(dataSize) {
@@ -655,9 +681,24 @@ class WhisperService extends EventEmitter {
             
             // 임시 압축 해제 디렉토리 생성
             await fsPromises.mkdir(extractDir, { recursive: true });
-            
-            // PowerShell 명령에서 경로를 올바르게 인용
-            const expandCommand = `Expand-Archive -Path "${tempFile}" -DestinationPath "${extractDir}" -Force`;
+
+            // Security: Validate paths to prevent PowerShell injection
+            const resolvedTempFile = path.resolve(tempFile);
+            const resolvedExtractDir = path.resolve(extractDir);
+
+            // Verify paths are within expected directories
+            if (!resolvedTempFile.startsWith(path.resolve(this.tempDir))) {
+                throw new Error('Invalid temp file path');
+            }
+            if (!resolvedExtractDir.startsWith(path.resolve(this.tempDir))) {
+                throw new Error('Invalid extract directory path');
+            }
+
+            // Escape double quotes for PowerShell (replace " with "")
+            const escapedTempFile = resolvedTempFile.replace(/"/g, '""');
+            const escapedExtractDir = resolvedExtractDir.replace(/"/g, '""');
+
+            const expandCommand = `Expand-Archive -Path "${escapedTempFile}" -DestinationPath "${escapedExtractDir}" -Force`;
             await spawnAsync('powershell', ['-command', expandCommand]);
             
             console.log('[WhisperService] Step 3: Finding and moving whisper executable...');

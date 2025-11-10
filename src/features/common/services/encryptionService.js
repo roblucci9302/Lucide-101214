@@ -86,12 +86,12 @@ function resetSessionKey() {
  * @returns {string | null} The encrypted data, as a base64 string containing iv, authTag, and content, or the original value if it cannot be encrypted.
  */
 function encrypt(text) {
+    // Security: Fail explicitly if encryption is not initialized
     if (!sessionKey) {
-        console.error('[EncryptionService] Encryption key is not initialized. Cannot encrypt.');
-        return text; // Return original if key is missing
+        throw new Error('[EncryptionService] Encryption key is not initialized. Cannot encrypt.');
     }
     if (text == null) { // checks for null or undefined
-        return text;
+        throw new Error('[EncryptionService] Cannot encrypt null or undefined value.');
     }
 
     try {
@@ -108,7 +108,7 @@ function encrypt(text) {
         return Buffer.concat([iv, authTag, Buffer.from(encrypted, 'hex')]).toString('base64');
     } catch (error) {
         console.error('[EncryptionService] Encryption failed:', error);
-        return text; // Return original on error
+        throw new Error(`Encryption failed: ${error.message}`);
     }
 }
 
@@ -118,19 +118,19 @@ function encrypt(text) {
  * @returns {string | null} The decrypted text, or the original value if it cannot be decrypted.
  */
 function decrypt(encryptedText) {
+    // Security: Fail explicitly if encryption is not initialized
     if (!sessionKey) {
-        console.error('[EncryptionService] Encryption key is not initialized. Cannot decrypt.');
-        return encryptedText; // Return original if key is missing
+        throw new Error('[EncryptionService] Encryption key is not initialized. Cannot decrypt.');
     }
     if (encryptedText == null || typeof encryptedText !== 'string') {
-        return encryptedText;
+        throw new Error('[EncryptionService] Cannot decrypt null or non-string value.');
     }
 
     try {
         const data = Buffer.from(encryptedText, 'base64');
         if (data.length < IV_LENGTH + AUTH_TAG_LENGTH) {
-            // This is not a valid encrypted string, likely plain text.
-            return encryptedText;
+            // This is not a valid encrypted string
+            throw new Error('[EncryptionService] Invalid encrypted data format (too short).');
         }
         
         const key = Buffer.from(sessionKey, 'hex');
@@ -146,10 +146,8 @@ function decrypt(encryptedText) {
         
         return decrypted;
     } catch (error) {
-        // It's common for this to fail if the data is not encrypted (e.g., legacy data).
-        // In that case, we return the original value.
         console.error('[EncryptionService] Decryption failed:', error);
-        return encryptedText;
+        throw new Error(`Decryption failed: ${error.message}`);
     }
 }
 

@@ -18,7 +18,22 @@ module.exports = {
     ipcMain.handle('open-login-page', () => windowManager.openLoginPage());
     ipcMain.handle('open-personalize-page', () => windowManager.openLoginPage());
     ipcMain.handle('move-window-step', (event, direction) => windowManager.moveWindowStep(direction));
-    ipcMain.handle('open-external', (event, url) => shell.openExternal(url));
+    ipcMain.handle('open-external', async (event, url) => {
+      // Security: Whitelist allowed protocols
+      const allowedProtocols = ['http:', 'https:'];
+      try {
+        const parsed = new URL(url);
+        if (!allowedProtocols.includes(parsed.protocol)) {
+          console.error('[Security] Blocked protocol:', parsed.protocol, 'for URL:', url);
+          return { success: false, error: 'Invalid protocol. Only http and https are allowed.' };
+        }
+        await shell.openExternal(url);
+        return { success: true };
+      } catch (error) {
+        console.error('[Security] Invalid URL:', url, error);
+        return { success: false, error: 'Invalid URL format' };
+      }
+    });
 
     // Newly moved handlers from windowManager
     ipcMain.on('header-state-changed', (event, state) => windowManager.handleHeaderStateChanged(state));

@@ -737,7 +737,22 @@ class OllamaService extends EventEmitter {
             console.log('[OllamaService] Step 4: Setting up CLI path...');
             onProgress?.({ stage: 'linking', message: 'Creating command-line shortcut...', progress: 0 });
             try {
-                const script = `do shell script "mkdir -p /usr/local/bin && ln -sf '${this.getOllamaCliPath()}' '/usr/local/bin/ollama'" with administrator privileges`;
+                const ollamaCliPath = this.getOllamaCliPath();
+
+                // Security: Validate path to prevent command injection
+                if (!ollamaCliPath || typeof ollamaCliPath !== 'string') {
+                    throw new Error('Invalid Ollama CLI path');
+                }
+
+                // Path must be absolute and not contain shell special characters
+                if (!path.isAbsolute(ollamaCliPath) || /[;&|`$()]/.test(ollamaCliPath)) {
+                    throw new Error('Invalid Ollama CLI path format');
+                }
+
+                // Escape single quotes in path for AppleScript
+                const escapedPath = ollamaCliPath.replace(/'/g, "'\\''");
+
+                const script = `do shell script "mkdir -p /usr/local/bin && ln -sf '${escapedPath}' '/usr/local/bin/ollama'" with administrator privileges`;
                 await spawnAsync('osascript', ['-e', script]);
                 onProgress?.({ stage: 'linking', message: 'Shortcut created.', progress: 100 });
             } catch (linkError) {

@@ -431,6 +431,27 @@ class ModelStateService extends EventEmitter {
         });
         return hasLlmKey && hasSttKey;
     }
+
+    /**
+     * Cleanup resources (close Electron Store)
+     * Should be called before app shutdown
+     */
+    cleanup() {
+        console.log('[ModelStateService] Cleaning up resources...');
+
+        // Note: electron-store doesn't have an explicit close() method
+        // but we can clear our reference to allow garbage collection
+        if (this.store) {
+            // Force any pending writes to complete
+            try {
+                // electron-store automatically saves, but we can ensure it's done
+                this.store = null;
+                console.log('[ModelStateService] Store reference cleared');
+            } catch (error) {
+                console.error('[ModelStateService] Error during cleanup:', error);
+            }
+        }
+    }
 }
 
 const modelStateService = new ModelStateService();

@@ -1298,16 +1298,19 @@ class OllamaService extends EventEmitter {
     async getAllModelsWithStatus() {
         // Get all installed models directly from Ollama
         const installedModels = await this.getInstalledModels();
-        
+
         // Get loaded models from memory
         const loadedModels = await this.getLoadedModels();
-        
+
         const models = [];
+        let count = 0;
+
+        // Process installed models with async chunking
         for (const model of installedModels) {
             const isWarmingUp = this.warmingModels.has(model.name);
             const isWarmedUp = this.warmedModels.has(model.name);
             const isLoaded = loadedModels.includes(model.name);
-            
+
             models.push({
                 name: model.name,
                 displayName: model.name, // Use model name as display name
@@ -1321,9 +1324,16 @@ class OllamaService extends EventEmitter {
                 isLoaded,  // Actually loaded in memory
                 status: isWarmingUp ? 'warming' : (isLoaded ? 'loaded' : (isWarmedUp ? 'ready' : 'cold'))
             });
+
+            // Yield to event loop every 10 items to prevent blocking
+            count++;
+            if (count % 10 === 0) {
+                await new Promise(resolve => setImmediate(resolve));
+            }
         }
-        
+
         // Also add any models currently being installed
+        count = 0;
         for (const [modelName, progress] of this.installationProgress) {
             if (!models.find(m => m.name === modelName)) {
                 models.push({
@@ -1335,9 +1345,15 @@ class OllamaService extends EventEmitter {
                     installing: true,
                     progress: progress
                 });
+
+                // Yield to event loop every 10 items
+                count++;
+                if (count % 10 === 0) {
+                    await new Promise(resolve => setImmediate(resolve));
+                }
             }
         }
-        
+
         return models;
     }
 

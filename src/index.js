@@ -38,6 +38,7 @@ global.modelStateService = modelStateService;
 // Import and initialize OllamaService
 const ollamaService = require('./features/common/services/ollamaService');
 const ollamaModelRepository = require('./features/common/repositories/ollamaModel');
+const localAIManager = require('./features/common/services/localAIManager');
 
 // Native deep link handling - cross-platform compatible
 let pendingDeepLinkUrl = null;
@@ -168,12 +169,20 @@ app.on('before-quit', async (event) => {
             console.warn('[Shutdown] Could not end active sessions (database may be closed):', dbError.message);
         }
         
+        console.log('[Shutdown] shutting down LocalAI services...');
+        try {
+            await localAIManager.shutdown();
+            console.log('[Shutdown] LocalAI services shut down');
+        } catch (localAIError) {
+            console.warn('[Shutdown] Error shutting down LocalAI services:', localAIError.message);
+        }
+
         console.log('[Shutdown] shutting down Ollama service...');
         const ollamaShutdownSuccess = await Promise.race([
             ollamaService.shutdown(false),
             new Promise(resolve => setTimeout(() => resolve(false), 8000))
         ]);
-        
+
         if (ollamaShutdownSuccess) {
             console.log('[Shutdown] Ollama service shut down gracefully');
         } else {
@@ -184,7 +193,17 @@ app.on('before-quit', async (event) => {
                 console.warn('[Shutdown] Force shutdown also failed:', forceShutdownError.message);
             }
         }
-        
+
+        console.log('[Shutdown] Cleaning up event listeners and services...');
+        try {
+            featureBridge.cleanup();
+            authService.cleanup();
+            modelStateService.cleanup();
+            console.log('[Shutdown] Event listeners and services cleaned up');
+        } catch (cleanupError) {
+            console.warn('[Shutdown] Error during cleanup:', cleanupError.message);
+        }
+
         try {
             databaseInitializer.close();
             console.log('[Shutdown] Database connections closed');

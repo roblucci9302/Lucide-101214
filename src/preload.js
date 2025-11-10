@@ -288,6 +288,20 @@ contextBridge.exposeInMainWorld('api', {
     validateForm: (profileId, workflowId, formData) => ipcRenderer.invoke('workflows:validate-form', profileId, workflowId, formData)
   },
 
+  // Phase 4: Knowledge Base - Documents
+  documents: {
+    getAllDocuments: () => ipcRenderer.invoke('documents:get-all'),
+    searchDocuments: (query, filters) => ipcRenderer.invoke('documents:search', query, filters),
+    getStats: () => ipcRenderer.invoke('documents:get-stats'),
+    deleteDocument: (documentId) => ipcRenderer.invoke('documents:delete', documentId)
+  },
+
+  // Phase 4: RAG (Retrieval Augmented Generation)
+  rag: {
+    retrieveContext: (query, options) => ipcRenderer.invoke('rag:retrieve-context', query, options),
+    getSessionCitations: (sessionId) => ipcRenderer.invoke('rag:get-session-citations', sessionId)
+  },
+
   // src/ui/settings/ShortCutSettingsView.js
   shortcutSettingsView: {
     // Shortcut Management

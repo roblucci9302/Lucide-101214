@@ -15,6 +15,8 @@ const encryptionService = require('../features/common/services/encryptionService
 const agentProfileService = require('../features/common/services/agentProfileService');
 const conversationHistoryService = require('../features/common/services/conversationHistoryService');
 const workflowService = require('../features/common/services/workflowService');
+const documentService = require('../features/common/services/documentService');
+const ragService = require('../features/common/services/ragService');
 
 module.exports = {
   // Renderer로부터의 요청을 수신하고 서비스로 전달
@@ -92,6 +94,31 @@ module.exports = {
     });
     ipcMain.handle('workflows:validate-form', (event, profileId, workflowId, formData) => {
         return workflowService.validateFormData(profileId, workflowId, formData);
+    });
+
+    // Knowledge Base - Documents (Phase 4)
+    ipcMain.handle('documents:get-all', async () => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.getAllDocuments(userId);
+    });
+    ipcMain.handle('documents:search', async (event, query, filters) => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.searchDocuments(userId, query, filters);
+    });
+    ipcMain.handle('documents:get-stats', async () => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.getDocumentStats(userId);
+    });
+    ipcMain.handle('documents:delete', async (event, documentId) => {
+        return await documentService.deleteDocument(documentId);
+    });
+
+    // RAG (Phase 4)
+    ipcMain.handle('rag:retrieve-context', async (event, query, options) => {
+        return await ragService.retrieveContext(query, options);
+    });
+    ipcMain.handle('rag:get-session-citations', async (event, sessionId) => {
+        return await ragService.getSessionCitations(sessionId);
     });
 
     // Permissions

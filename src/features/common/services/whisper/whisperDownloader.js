@@ -1,19 +1,19 @@
 /**
- * OllamaDownloader - Ollama-specific download wrapper
+ * WhisperDownloader - Whisper-specific download wrapper
  * Extends the generic DownloadService
  */
 const DownloadService = require('../downloadService');
 
-class OllamaDownloader extends DownloadService {
+class WhisperDownloader extends DownloadService {
     constructor() {
-        super('OllamaDownloader');
+        super('WhisperDownloader');
     }
 
     // All download functionality is inherited from DownloadService
     // This class exists for:
-    // 1. Ollama-specific service naming
-    // 2. Future Ollama-specific download customizations if needed
+    // 1. Whisper-specific service naming
+    // 2. Future Whisper-specific download customizations if needed
     // 3. Maintaining backward compatibility with existing code
 }
 
-module.exports = OllamaDownloader;
+module.exports = WhisperDownloader;

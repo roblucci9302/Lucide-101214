@@ -15,8 +15,7 @@ const isLiquidGlassSupported = () => {
         return false;
     }
     const majorVersion = parseInt(os.release().split('.')[0], 10);
-    // return majorVersion >= 25; // macOS 26+ (Darwin 25+)
-    return majorVersion >= 26; // See you soon!
+    return majorVersion >= 26;
 };
 let shouldUseLiquidGlass = isLiquidGlassSupported();
 if (shouldUseLiquidGlass) {
@@ -43,8 +42,6 @@ let movementManager = null;
 
 
 function updateChildWindowLayouts(animated = true) {
-    // if (movementManager.isAnimating) return;
-
     const visibleWindows = {};
     const listenWin = windowPool.get('listen');
     const askWin = windowPool.get('ask');
@@ -110,7 +107,6 @@ function setupWindowController(windowPool, layoutManager, movementManager) {
         changeAllWindowsVisibility(windowPool, targetVisibility);
     });
     internalBridge.on('window:moveToDisplay', ({ displayId }) => {
-        // movementManager.moveToDisplay(displayId);
         const header = windowPool.get('header');
         if (header) {
             const newPosition = layoutManager.calculateNewPositionForDisplay(header, displayId);
@@ -439,8 +435,6 @@ const openLoginPage = () => {
 
 
 function createFeatureWindows(header, namesToCreate) {
-    // if (windowPool.has('listen')) return;
-
     const commonChildOptions = {
         parent: header,
         show: false,

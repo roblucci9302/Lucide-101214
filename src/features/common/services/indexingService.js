@@ -6,6 +6,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
+const { estimateTokens } = require('../utils/tokenUtils');
 
 /**
  * @class IndexingService
@@ -71,7 +72,7 @@ class IndexingService {
                     content: chunk.content,
                     char_start: chunk.start,
                     char_end: chunk.end,
-                    token_count: this._estimateTokens(chunk.content),
+                    token_count: estimateTokens(chunk.content),
                     embedding: embedding ? JSON.stringify(embedding) : null,
                     created_at: Date.now(),
                     sync_state: 'clean'
@@ -121,7 +122,7 @@ class IndexingService {
                 return await this._keywordSearch(query, options);
             }
 
-            // Get all chunks (with optional document filter)
+            // Get chunks (limited to 1000 most recent for performance)
             let sql = 'SELECT * FROM document_chunks WHERE embedding IS NOT NULL';
             const params = [];
 
@@ -129,6 +130,9 @@ class IndexingService {
                 sql += ` AND document_id IN (${documentIds.map(() => '?').join(',')})`;
                 params.push(...documentIds);
             }
+
+            // Limit to 1000 most recent chunks to avoid memory issues
+            sql += ' ORDER BY created_at DESC LIMIT 1000';
 
             const chunks = await this.chunksRepository.query(sql, params);
 
@@ -278,17 +282,6 @@ class IndexingService {
     }
 
     /**
-     * Estimate token count for text
-     * @private
-     * @param {string} text - Text to estimate
-     * @returns {number} Estimated token count
-     */
-    _estimateTokens(text) {
-        // Rough estimation: ~4 characters per token
-        return Math.ceil(text.length / 4);
-    }
-
-    /**
      * Keyword-based search fallback
      * @private
      * @param {string} query - Search query
@@ -337,17 +330,21 @@ class IndexingService {
     }
 
     /**
-     * Insert chunks into database
+     * Insert chunks into database (batch insert for performance)
      * @private
      */
     async _insertChunks(chunks) {
-        for (const chunk of chunks) {
-            const columns = Object.keys(chunk).join(', ');
-            const placeholders = Object.keys(chunk).map(() => '?').join(', ');
-            const query = `INSERT INTO document_chunks (${columns}) VALUES (${placeholders})`;
+        if (chunks.length === 0) return;
 
-            await this.chunksRepository.execute(query, Object.values(chunk));
-        }
+        // Batch insert: all chunks in one query
+        const columns = Object.keys(chunks[0]).join(', ');
+        const placeholderRow = `(${Object.keys(chunks[0]).map(() => '?').join(', ')})`;
+        const allPlaceholders = chunks.map(() => placeholderRow).join(', ');
+
+        const query = `INSERT INTO document_chunks (${columns}) VALUES ${allPlaceholders}`;
+        const allValues = chunks.flatMap(chunk => Object.values(chunk));
+
+        await this.chunksRepository.execute(query, allValues);
     }
 }
 

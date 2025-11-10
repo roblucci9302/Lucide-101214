@@ -8,6 +8,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { DocumentValidator, QueryValidator } = require('../utils/validators');
 
 /**
  * @class DocumentService
@@ -48,6 +49,14 @@ class DocumentService {
         console.log(`[DocumentService] Getting documents for user: ${uid}`);
 
         try {
+            // Validate sortBy to prevent SQL injection
+            const ALLOWED_SORT_COLUMNS = ['created_at', 'updated_at', 'title', 'filename', 'file_size', 'file_type'];
+            const validSortBy = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : 'created_at';
+
+            // Validate order to prevent SQL injection
+            const ALLOWED_ORDERS = ['ASC', 'DESC'];
+            const validOrder = ALLOWED_ORDERS.includes(order.toUpperCase()) ? order.toUpperCase() : 'DESC';
+
             // Query documents from database
             const query = `
                 SELECT
@@ -56,7 +65,7 @@ class DocumentService {
                     created_at, updated_at
                 FROM documents
                 WHERE uid = ?
-                ORDER BY ${sortBy} ${order}
+                ORDER BY ${validSortBy} ${validOrder}
                 LIMIT ? OFFSET ?
             `;
 
@@ -171,6 +180,19 @@ class DocumentService {
         console.log(`[DocumentService] Uploading document: ${filename} (${fileType})`);
 
         try {
+            // Validate file data
+            const fileValidation = DocumentValidator.validateFile(fileData);
+            if (!fileValidation.valid) {
+                throw new Error(`Invalid file data: ${fileValidation.errors.join(', ')}`);
+            }
+
+            // Validate metadata
+            const metadataValidation = DocumentValidator.validateMetadata(metadata);
+            if (!metadataValidation.valid) {
+                console.warn('[DocumentService] Invalid metadata:', metadataValidation.errors);
+                // Continue with sanitized metadata (non-blocking)
+            }
+
             // Extract text content
             const content = await this._extractText(filepath || buffer, fileType);
 

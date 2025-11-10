@@ -1,5 +1,6 @@
 const sqliteClient = require('./sqliteClient');
 const sessionRepository = require('../repositories/session');
+const { SessionValidator, QueryValidator } = require('../utils/validators');
 
 /**
  * Service for managing conversation history and enhanced search
@@ -25,6 +26,14 @@ class ConversationHistoryService {
         } = options;
 
         try {
+            // Validate sortBy to prevent SQL injection
+            const ALLOWED_SORT_COLUMNS = ['updated_at', 'started_at', 'title', 'created_at'];
+            const validSortBy = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : 'updated_at';
+
+            // Validate order to prevent SQL injection
+            const ALLOWED_ORDERS = ['ASC', 'DESC'];
+            const validOrder = ALLOWED_ORDERS.includes(order.toUpperCase()) ? order.toUpperCase() : 'DESC';
+
             const db = sqliteClient.getDatabase();
             const query = `
                 SELECT
@@ -35,7 +44,7 @@ class ConversationHistoryService {
                 LEFT JOIN ai_messages m ON s.id = m.session_id
                 WHERE s.uid = ?
                 GROUP BY s.id
-                ORDER BY s.${sortBy} ${order}
+                ORDER BY s.${validSortBy} ${validOrder}
                 LIMIT ? OFFSET ?
             `;
 
@@ -207,6 +216,13 @@ class ConversationHistoryService {
      */
     async updateSessionMetadata(sessionId, metadata) {
         try {
+            // Validate metadata
+            const validation = SessionValidator.validateMetadata(metadata);
+            if (!validation.valid) {
+                console.warn('[ConversationHistoryService] Invalid metadata:', validation.errors);
+                return false;
+            }
+
             const db = sqliteClient.getDatabase();
             const updates = [];
             const params = [];

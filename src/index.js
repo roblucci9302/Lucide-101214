@@ -20,6 +20,13 @@ const modelStateService = require('./features/common/services/modelStateService'
 const featureBridge = require('./bridge/featureBridge');
 const windowBridge = require('./bridge/windowBridge');
 
+// Phase 4: Knowledge Base services
+const { createGenericRepository } = require('./features/common/repositories/genericRepository');
+const documentService = require('./features/common/services/documentService');
+const indexingService = require('./features/common/services/indexingService');
+const ragService = require('./features/common/services/ragService');
+const { EmbeddingProviderFactory } = require('./features/common/services/embeddingProvider');
+
 // Global variables
 const eventBridge = new EventEmitter();
 let isShuttingDown = false; // Flag to prevent infinite shutdown loop
@@ -84,6 +91,29 @@ app.whenReady().then(async () => {
         //////// after_modelStateService ////////
         await modelStateService.initialize();
         //////// after_modelStateService ////////
+
+        // Phase 4: Initialize Knowledge Base services
+        console.log('[index.js] Initializing Phase 4: Knowledge Base services...');
+        try {
+            // Create repositories for Phase 4 tables
+            const documentsRepository = createGenericRepository('documents');
+            const chunksRepository = createGenericRepository('document_chunks');
+            const citationsRepository = createGenericRepository('document_citations');
+
+            // Initialize services with repositories
+            documentService.initialize(documentsRepository, chunksRepository);
+            indexingService.initialize(chunksRepository);
+            ragService.initialize(citationsRepository);
+
+            // Set up embedding provider (auto-detects OpenAI key or uses mock)
+            const embeddingProvider = EmbeddingProviderFactory.createAuto();
+            indexingService.setEmbeddingProvider(embeddingProvider);
+
+            console.log('[index.js] Phase 4 services initialized successfully');
+        } catch (phase4Error) {
+            console.error('[index.js] Error initializing Phase 4 services:', phase4Error);
+            // Non-critical - app can continue without knowledge base features
+        }
 
         featureBridge.initialize();
         windowBridge.initialize();

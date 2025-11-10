@@ -1,5 +1,7 @@
 // src/bridge/featureBridge.js
-const { ipcMain, app, BrowserWindow } = require('electron');
+const { ipcMain, app, BrowserWindow, dialog } = require('electron');
+const fs = require('fs').promises;
+const path = require('path');
 const settingsService = require('../features/settings/settingsService');
 const authService = require('../features/common/services/authService');
 const whisperService = require('../features/common/services/whisperService');
@@ -16,6 +18,7 @@ const agentProfileService = require('../features/common/services/agentProfileSer
 const conversationHistoryService = require('../features/common/services/conversationHistoryService');
 const workflowService = require('../features/common/services/workflowService');
 const documentService = require('../features/common/services/documentService');
+const indexingService = require('../features/common/services/indexingService');
 const ragService = require('../features/common/services/ragService');
 
 module.exports = {
@@ -111,6 +114,94 @@ module.exports = {
     });
     ipcMain.handle('documents:delete', async (event, documentId) => {
         return await documentService.deleteDocument(documentId);
+    });
+    ipcMain.handle('documents:upload', async () => {
+        try {
+            const userId = authService.getCurrentUserId();
+            if (!userId) {
+                throw new Error('User not authenticated');
+            }
+
+            // Open file picker dialog
+            const result = await dialog.showOpenDialog({
+                title: 'Upload Document',
+                properties: ['openFile'],
+                filters: [
+                    { name: 'Documents', extensions: ['txt', 'md', 'pdf', 'docx'] },
+                    { name: 'Text Files', extensions: ['txt', 'md'] },
+                    { name: 'PDF Files', extensions: ['pdf'] },
+                    { name: 'Word Documents', extensions: ['docx'] },
+                    { name: 'All Files', extensions: ['*'] }
+                ]
+            });
+
+            if (result.canceled || result.filePaths.length === 0) {
+                return { success: false, cancelled: true };
+            }
+
+            const filePath = result.filePaths[0];
+            const filename = path.basename(filePath);
+
+            // Check file size before reading (prevent DoS)
+            const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+            const stats = await fs.stat(filePath);
+
+            if (stats.size > MAX_FILE_SIZE) {
+                console.warn(`[FeatureBridge] File too large: ${stats.size} bytes (max: ${MAX_FILE_SIZE})`);
+                return {
+                    success: false,
+                    error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`
+                };
+            }
+
+            // Read file buffer
+            const buffer = await fs.readFile(filePath);
+
+            console.log(`[FeatureBridge] Uploading document: ${filename} (${buffer.length} bytes)`);
+
+            // Upload document
+            const document = await documentService.uploadDocument(userId, {
+                filename,
+                filepath: filePath,
+                buffer
+            });
+
+            // Index document for semantic search
+            try {
+                console.log(`[FeatureBridge] Indexing document: ${document.id}`);
+                const indexResult = await indexingService.indexDocument(
+                    document.id,
+                    document.content,
+                    { generateEmbeddings: true }
+                );
+
+                // Update document indexed status
+                await documentService.updateDocument(document.id, {
+                    chunk_count: indexResult.chunk_count,
+                    indexed: 1
+                });
+
+                console.log(`[FeatureBridge] Document indexed: ${indexResult.chunk_count} chunks`);
+            } catch (indexError) {
+                console.error('[FeatureBridge] Error indexing document:', indexError);
+                // Continue even if indexing fails
+            }
+
+            return {
+                success: true,
+                document: {
+                    id: document.id,
+                    title: document.title,
+                    filename: document.filename
+                }
+            };
+        } catch (error) {
+            console.error('[FeatureBridge] Error uploading document:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     });
 
     // RAG (Phase 4)

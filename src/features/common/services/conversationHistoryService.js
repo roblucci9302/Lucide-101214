@@ -1,5 +1,6 @@
 const sqliteClient = require('./sqliteClient');
 const sessionRepository = require('../repositories/session');
+const { SessionValidator, QueryValidator } = require('../utils/validators');
 
 /**
  * Service for managing conversation history and enhanced search
@@ -215,6 +216,13 @@ class ConversationHistoryService {
      */
     async updateSessionMetadata(sessionId, metadata) {
         try {
+            // Validate metadata
+            const validation = SessionValidator.validateMetadata(metadata);
+            if (!validation.valid) {
+                console.warn('[ConversationHistoryService] Invalid metadata:', validation.errors);
+                return false;
+            }
+
             const db = sqliteClient.getDatabase();
             const updates = [];
             const params = [];

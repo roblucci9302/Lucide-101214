@@ -8,6 +8,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { DocumentValidator, QueryValidator } = require('../utils/validators');
 
 /**
  * @class DocumentService
@@ -179,6 +180,19 @@ class DocumentService {
         console.log(`[DocumentService] Uploading document: ${filename} (${fileType})`);
 
         try {
+            // Validate file data
+            const fileValidation = DocumentValidator.validateFile(fileData);
+            if (!fileValidation.valid) {
+                throw new Error(`Invalid file data: ${fileValidation.errors.join(', ')}`);
+            }
+
+            // Validate metadata
+            const metadataValidation = DocumentValidator.validateMetadata(metadata);
+            if (!metadataValidation.valid) {
+                console.warn('[DocumentService] Invalid metadata:', metadataValidation.errors);
+                // Continue with sanitized metadata (non-blocking)
+            }
+
             // Extract text content
             const content = await this._extractText(filepath || buffer, fileType);
 

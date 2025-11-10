@@ -8,6 +8,7 @@
 const { v4: uuidv4 } = require('uuid');
 const indexingService = require('./indexingService');
 const documentService = require('./documentService');
+const { estimateTokens } = require('../utils/tokenUtils');
 
 /**
  * @class RAGService
@@ -179,7 +180,7 @@ IMPORTANT INSTRUCTIONS FOR USING CONTEXT:
                 userQuery,
                 hasContext: true,
                 sources: filteredSources,
-                contextTokens: filteredSources.reduce((sum, s) => sum + this._estimateTokens(s.content), 0)
+                contextTokens: filteredSources.reduce((sum, s) => sum + estimateTokens(s.content), 0)
             };
         } catch (error) {
             console.error('[RAGService] Error building enriched prompt:', error);
@@ -330,7 +331,7 @@ IMPORTANT INSTRUCTIONS FOR USING CONTEXT:
         let currentTokens = 0;
 
         for (const source of sources) {
-            const sourceTokens = this._estimateTokens(source.content);
+            const sourceTokens = estimateTokens(source.content);
 
             if (currentTokens + sourceTokens <= maxTokens) {
                 filtered.push(source);
@@ -341,17 +342,6 @@ IMPORTANT INSTRUCTIONS FOR USING CONTEXT:
         }
 
         return filtered;
-    }
-
-    /**
-     * Estimate token count for text
-     * @private
-     * @param {string} text - Text to estimate
-     * @returns {number} Estimated token count
-     */
-    _estimateTokens(text) {
-        // Rough estimation: ~4 characters per token
-        return Math.ceil(text.length / 4);
     }
 
     /**

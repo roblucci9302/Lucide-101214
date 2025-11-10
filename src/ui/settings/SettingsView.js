@@ -505,6 +505,9 @@ export class SettingsView extends LitElement {
         installingModels: { type: Object, state: true },
         // Whisper related properties
         whisperModels: { type: Array, state: true },
+        // Agent profile properties
+        availableProfiles: { type: Array, state: true },
+        activeProfile: { type: String, state: true },
     };
     //////// after_modelStateService ////////
 
@@ -537,6 +540,9 @@ export class SettingsView extends LitElement {
         this.handleUsePicklesKey = this.handleUsePicklesKey.bind(this)
         this.autoUpdateEnabled = true;
         this.autoUpdateLoading = true;
+        // Agent profiles
+        this.availableProfiles = [];
+        this.activeProfile = 'lucide_assistant';
         this.loadInitialData();
         //////// after_modelStateService ////////
     }
@@ -613,12 +619,14 @@ export class SettingsView extends LitElement {
         this.isLoading = true;
         try {
             // Load essential data first
-            const [userState, modelSettings, presets, contentProtection, shortcuts] = await Promise.all([
+            const [userState, modelSettings, presets, contentProtection, shortcuts, availableProfiles, activeProfile] = await Promise.all([
                 window.api.settingsView.getCurrentUser(),
                 window.api.settingsView.getModelSettings(), // Facade call
                 window.api.settingsView.getPresets(),
                 window.api.settingsView.getContentProtectionStatus(),
-                window.api.settingsView.getCurrentShortcuts()
+                window.api.settingsView.getCurrentShortcuts(),
+                window.api.settingsView.getAvailableProfiles(),
+                window.api.settingsView.getActiveProfile()
             ]);
             
             if (userState && userState.isLoggedIn) this.firebaseUser = userState;
@@ -636,11 +644,14 @@ export class SettingsView extends LitElement {
             this.presets = presets || [];
             this.isContentProtectionOn = contentProtection;
             this.shortcuts = shortcuts || {};
+            this.availableProfiles = availableProfiles || [];
+            this.activeProfile = activeProfile || 'lucide_assistant';
+
             if (this.presets.length > 0) {
                 const firstUserPreset = this.presets.find(p => p.is_default === 0);
                 if (firstUserPreset) this.selectedPreset = firstUserPreset;
             }
-            
+
             // Load LocalAI status asynchronously to improve initial load time
             this.loadLocalAIStatus();
         } catch (error) {
@@ -1094,6 +1105,22 @@ export class SettingsView extends LitElement {
         console.log('Selected preset:', preset);
     }
 
+    async handleProfileSelect(profileId) {
+        if (!window.api || this.isLoading) return;
+        try {
+            const result = await window.api.settingsView.setActiveProfile(profileId);
+            if (result && result.success) {
+                this.activeProfile = profileId;
+                console.log('Agent profile changed to:', profileId);
+                this.requestUpdate();
+            } else {
+                console.error('Failed to change agent profile');
+            }
+        } catch (error) {
+            console.error('Error changing agent profile:', error);
+        }
+    }
+
     handleMoveLeft() {
         console.log('Move Left clicked');
         window.api.settingsView.moveWindowStep('left');
@@ -1369,7 +1396,53 @@ export class SettingsView extends LitElement {
                 ${apiKeyManagementHTML}
                 ${modelSelectionHTML}
 
-                <div class="buttons-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 6px; margin-top: 6px;">
+                <!-- Agent Profile Selection Section -->
+                <div class="agent-profile-section" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div class="section-header" style="font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.7); margin-bottom: 8px;">
+                        Mode de Lucy
+                    </div>
+                    <div class="profile-list" style="display: flex; flex-direction: column; gap: 6px;">
+                        ${this.availableProfiles.map(profile => html`
+                            <div class="profile-item ${this.activeProfile === profile.id ? 'active' : ''}"
+                                 @click=${() => this.handleProfileSelect(profile.id)}
+                                 style="
+                                     padding: 10px 12px;
+                                     background: ${this.activeProfile === profile.id ? 'rgba(100, 150, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+                                     border: 1px solid ${this.activeProfile === profile.id ? 'rgba(100, 150, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)'};
+                                     border-radius: 8px;
+                                     cursor: pointer;
+                                     transition: all 0.2s;
+                                 "
+                                 @mouseover=${(e) => {
+                                     if (this.activeProfile !== profile.id) {
+                                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                                     }
+                                 }}
+                                 @mouseout=${(e) => {
+                                     if (this.activeProfile !== profile.id) {
+                                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                     }
+                                 }}>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 18px;">${profile.icon}</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 500; color: white;">
+                                            ${profile.name}
+                                        </div>
+                                        <div style="font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px;">
+                                            ${profile.description}
+                                        </div>
+                                    </div>
+                                    ${this.activeProfile === profile.id ? html`
+                                        <span style="font-size: 12px; color: rgba(100, 200, 100, 0.9);">✓</span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `)}
+                    </div>
+                </div>
+
+                <div class="buttons-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 6px; margin-top: 12px;">
                     <button class="settings-button full-width" @click=${this.openShortcutEditor}>
                         Modifier les raccourcis
                     </button>

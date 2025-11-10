@@ -22,6 +22,8 @@ const util = require('util');
 const execFile = util.promisify(require('child_process').execFile);
 const { desktopCapturer } = require('electron');
 const modelStateService = require('../common/services/modelStateService');
+const agentProfileService = require('../common/services/agentProfileService');
+const conversationHistoryService = require('../common/services/conversationHistoryService');
 
 // Try to load sharp, but don't fail if it's not available
 let sharp;
@@ -242,7 +244,29 @@ class AskService {
             sessionId = await sessionRepository.getOrCreateActive('ask');
             await askRepository.addAiMessage({ sessionId, role: 'user', content: userPrompt.trim() });
             console.log(`[AskService] DB: Saved user prompt to session ${sessionId}`);
-            
+
+            // Get the current active agent profile
+            const activeProfile = agentProfileService.getCurrentProfile();
+            console.log(`[AskService] Using agent profile: ${activeProfile}`);
+
+            // Update session metadata with agent profile
+            await conversationHistoryService.updateSessionMetadata(sessionId, {
+                agent_profile: activeProfile
+            });
+
+            // Update message count
+            const messageCount = await conversationHistoryService.updateMessageCount(sessionId);
+
+            // Auto-generate title if this is the first message
+            if (messageCount === 1) {
+                const generatedTitle = await conversationHistoryService.generateTitleFromContent(sessionId);
+                await conversationHistoryService.updateSessionMetadata(sessionId, {
+                    title: generatedTitle,
+                    auto_title: 1
+                });
+                console.log(`[AskService] Auto-generated title: "${generatedTitle}"`);
+            }
+
             const modelInfo = await modelStateService.getCurrentModelInfo('llm');
             if (!modelInfo || !modelInfo.apiKey) {
                 throw new Error('AI model or API key not configured.');
@@ -253,8 +277,7 @@ class AskService {
             const screenshotBase64 = screenshotResult.success ? screenshotResult.base64 : null;
 
             const conversationHistory = this._formatConversationForPrompt(conversationHistoryRaw);
-
-            const systemPrompt = getSystemPrompt('pickle_glass_analysis', conversationHistory, false);
+            const systemPrompt = getSystemPrompt(activeProfile, conversationHistory, false);
 
             const messages = [
                 { role: 'system', content: systemPrompt },

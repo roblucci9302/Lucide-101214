@@ -7,6 +7,7 @@ const migrationService = require('./migrationService');
 const sessionRepository = require('../repositories/session');
 const providerSettingsRepository = require('../repositories/providerSettings');
 const permissionService = require('./permissionService');
+const agentProfileService = require('./agentProfileService');
 
 async function getVirtualKeyByEmail(email, idToken) {
     if (!idToken) {
@@ -77,6 +78,9 @@ class AuthService {
                     // No 'await' here, so it runs in the background without blocking startup.
                     migrationService.checkAndRunMigration(user);
 
+                    // ** Initialize agent profile service for the user **
+                    await agentProfileService.initialize(user.uid);
+
                     // ***** CRITICAL: Wait for the virtual key and model state update to complete *****
                     try {
                         const idToken = await user.getIdToken(true);
@@ -109,6 +113,9 @@ class AuthService {
 
                     // End active sessions for the local/default user as well.
                     await sessionRepository.endAllActiveSessions();
+
+                    // Initialize agent profile for default user
+                    await agentProfileService.initialize('default_user');
 
                     encryptionService.resetSessionKey();
                 }

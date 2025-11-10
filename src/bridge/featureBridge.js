@@ -12,6 +12,11 @@ const askService = require('../features/ask/askService');
 const listenService = require('../features/listen/listenService');
 const permissionService = require('../features/common/services/permissionService');
 const encryptionService = require('../features/common/services/encryptionService');
+const agentProfileService = require('../features/common/services/agentProfileService');
+const conversationHistoryService = require('../features/common/services/conversationHistoryService');
+const workflowService = require('../features/common/services/workflowService');
+const documentService = require('../features/common/services/documentService');
+const ragService = require('../features/common/services/ragService');
 
 module.exports = {
   // Renderer로부터의 요청을 수신하고 서비스로 전달
@@ -35,6 +40,86 @@ module.exports = {
     ipcMain.handle('shortcut:openShortcutSettingsWindow', async () => await shortcutsService.openShortcutSettingsWindow());
     ipcMain.handle('shortcut:saveShortcuts', async (event, newKeybinds) => await shortcutsService.handleSaveShortcuts(newKeybinds));
     ipcMain.handle('shortcut:toggleAllWindowsVisibility', async () => await shortcutsService.toggleAllWindowsVisibility());
+
+    // Agent Profiles
+    ipcMain.handle('agent:get-available-profiles', () => agentProfileService.getAvailableProfiles());
+    ipcMain.handle('agent:get-active-profile', () => agentProfileService.getCurrentProfile());
+    ipcMain.handle('agent:set-active-profile', async (event, profileId) => {
+        const userId = authService.getCurrentUserId();
+        const success = await agentProfileService.setActiveProfile(userId, profileId);
+        return { success };
+    });
+
+    // Conversation History (Phase 2)
+    ipcMain.handle('history:get-all-sessions', async (event, options) => {
+        const userId = authService.getCurrentUserId();
+        return await conversationHistoryService.getAllSessions(userId, options);
+    });
+    ipcMain.handle('history:search-sessions', async (event, query, filters) => {
+        const userId = authService.getCurrentUserId();
+        return await conversationHistoryService.searchSessions(userId, query, filters);
+    });
+    ipcMain.handle('history:get-session-messages', async (event, sessionId) => {
+        return await conversationHistoryService.getSessionMessages(sessionId);
+    });
+    ipcMain.handle('history:get-stats', async () => {
+        const userId = authService.getCurrentUserId();
+        return await conversationHistoryService.getSessionStats(userId);
+    });
+    ipcMain.handle('history:update-metadata', async (event, sessionId, metadata) => {
+        return await conversationHistoryService.updateSessionMetadata(sessionId, metadata);
+    });
+    ipcMain.handle('history:delete-session', async (event, sessionId) => {
+        return await conversationHistoryService.deleteSession(sessionId);
+    });
+    ipcMain.handle('history:generate-title', async (event, sessionId) => {
+        return await conversationHistoryService.generateTitleFromContent(sessionId);
+    });
+
+    // Workflows (Phase 3)
+    ipcMain.handle('workflows:get-current-profile-workflows', () => {
+        return workflowService.getCurrentProfileWorkflows();
+    });
+    ipcMain.handle('workflows:get-workflows-metadata', (event, profileId) => {
+        return workflowService.getProfileWorkflowsMetadata(profileId);
+    });
+    ipcMain.handle('workflows:get-workflow', (event, profileId, workflowId) => {
+        return workflowService.getWorkflow(profileId, workflowId);
+    });
+    ipcMain.handle('workflows:build-prompt', (event, profileId, workflowId, formData) => {
+        return workflowService.buildPrompt(profileId, workflowId, formData);
+    });
+    ipcMain.handle('workflows:get-form-fields', (event, profileId, workflowId) => {
+        return workflowService.getWorkflowFormFields(profileId, workflowId);
+    });
+    ipcMain.handle('workflows:validate-form', (event, profileId, workflowId, formData) => {
+        return workflowService.validateFormData(profileId, workflowId, formData);
+    });
+
+    // Knowledge Base - Documents (Phase 4)
+    ipcMain.handle('documents:get-all', async () => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.getAllDocuments(userId);
+    });
+    ipcMain.handle('documents:search', async (event, query, filters) => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.searchDocuments(userId, query, filters);
+    });
+    ipcMain.handle('documents:get-stats', async () => {
+        const userId = authService.getCurrentUserId();
+        return await documentService.getDocumentStats(userId);
+    });
+    ipcMain.handle('documents:delete', async (event, documentId) => {
+        return await documentService.deleteDocument(documentId);
+    });
+
+    // RAG (Phase 4)
+    ipcMain.handle('rag:retrieve-context', async (event, query, options) => {
+        return await ragService.retrieveContext(query, options);
+    });
+    ipcMain.handle('rag:get-session-citations', async (event, sessionId) => {
+        return await ragService.getSessionCitations(sessionId);
+    });
 
     // Permissions
     ipcMain.handle('check-system-permissions', async () => await permissionService.checkSystemPermissions());

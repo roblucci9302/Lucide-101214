@@ -234,6 +234,11 @@ contextBridge.exposeInMainWorld('api', {
     toggleContentProtection: () => ipcRenderer.invoke('toggle-content-protection'),
     getCurrentShortcuts: () => ipcRenderer.invoke('settings:getCurrentShortcuts'),
     openShortcutSettingsWindow: () => ipcRenderer.invoke('shortcut:openShortcutSettingsWindow'),
+
+    // Agent Profile Management
+    getAvailableProfiles: () => ipcRenderer.invoke('agent:get-available-profiles'),
+    getActiveProfile: () => ipcRenderer.invoke('agent:get-active-profile'),
+    setActiveProfile: (profileId) => ipcRenderer.invoke('agent:set-active-profile', profileId),
     
     // Window Management
     moveWindowStep: (direction) => ipcRenderer.invoke('move-window-step', direction),
@@ -260,6 +265,41 @@ contextBridge.exposeInMainWorld('api', {
     removeOnLocalAIInstallProgress: (callback) => ipcRenderer.removeListener('localai:install-progress', callback),
     onLocalAIInstallationComplete: (callback) => ipcRenderer.on('localai:installation-complete', callback),
     removeOnLocalAIInstallationComplete: (callback) => ipcRenderer.removeListener('localai:installation-complete', callback)
+  },
+
+  // src/ui/history/HistoryView.js - Phase 2: Conversation History
+  history: {
+    getAllSessions: (options) => ipcRenderer.invoke('history:get-all-sessions', options),
+    searchSessions: (query, filters) => ipcRenderer.invoke('history:search-sessions', query, filters),
+    getSessionMessages: (sessionId) => ipcRenderer.invoke('history:get-session-messages', sessionId),
+    getStats: () => ipcRenderer.invoke('history:get-stats'),
+    updateMetadata: (sessionId, metadata) => ipcRenderer.invoke('history:update-metadata', sessionId, metadata),
+    deleteSession: (sessionId) => ipcRenderer.invoke('history:delete-session', sessionId),
+    generateTitle: (sessionId) => ipcRenderer.invoke('history:generate-title', sessionId)
+  },
+
+  // Phase 3: Workflows - Quick Actions
+  workflows: {
+    getCurrentProfileWorkflows: () => ipcRenderer.invoke('workflows:get-current-profile-workflows'),
+    getWorkflowsMetadata: (profileId) => ipcRenderer.invoke('workflows:get-workflows-metadata', profileId),
+    getWorkflow: (profileId, workflowId) => ipcRenderer.invoke('workflows:get-workflow', profileId, workflowId),
+    buildPrompt: (profileId, workflowId, formData) => ipcRenderer.invoke('workflows:build-prompt', profileId, workflowId, formData),
+    getFormFields: (profileId, workflowId) => ipcRenderer.invoke('workflows:get-form-fields', profileId, workflowId),
+    validateForm: (profileId, workflowId, formData) => ipcRenderer.invoke('workflows:validate-form', profileId, workflowId, formData)
+  },
+
+  // Phase 4: Knowledge Base - Documents
+  documents: {
+    getAllDocuments: () => ipcRenderer.invoke('documents:get-all'),
+    searchDocuments: (query, filters) => ipcRenderer.invoke('documents:search', query, filters),
+    getStats: () => ipcRenderer.invoke('documents:get-stats'),
+    deleteDocument: (documentId) => ipcRenderer.invoke('documents:delete', documentId)
+  },
+
+  // Phase 4: RAG (Retrieval Augmented Generation)
+  rag: {
+    retrieveContext: (query, options) => ipcRenderer.invoke('rag:retrieve-context', query, options),
+    getSessionCitations: (sessionId) => ipcRenderer.invoke('rag:get-session-citations', sessionId)
   },
 
   // src/ui/settings/ShortCutSettingsView.js

@@ -6,7 +6,8 @@ const LATEST_SCHEMA = {
             { name: 'email', type: 'TEXT NOT NULL' },
             { name: 'created_at', type: 'INTEGER' },
             { name: 'auto_update_enabled', type: 'INTEGER DEFAULT 1' },
-            { name: 'has_migrated_to_firebase', type: 'INTEGER DEFAULT 0' }
+            { name: 'has_migrated_to_firebase', type: 'INTEGER DEFAULT 0' },
+            { name: 'active_agent_profile', type: 'TEXT DEFAULT \'lucide_assistant\'' }
         ]
     },
     sessions: {
@@ -18,7 +19,13 @@ const LATEST_SCHEMA = {
             { name: 'started_at', type: 'INTEGER' },
             { name: 'ended_at', type: 'INTEGER' },
             { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' },
-            { name: 'updated_at', type: 'INTEGER' }
+            { name: 'updated_at', type: 'INTEGER' },
+            // Phase 2: Enhanced conversation history
+            { name: 'tags', type: 'TEXT' }, // JSON array: ["work", "personal", etc.]
+            { name: 'description', type: 'TEXT' }, // Optional longer description
+            { name: 'agent_profile', type: 'TEXT' }, // Which Lucy profile was used
+            { name: 'message_count', type: 'INTEGER DEFAULT 0' }, // Number of messages
+            { name: 'auto_title', type: 'INTEGER DEFAULT 1' } // 1 if title auto-generated
         ]
     },
     transcripts: {
@@ -113,6 +120,55 @@ const LATEST_SCHEMA = {
         columns: [
             { name: 'uid', type: 'TEXT PRIMARY KEY' },
             { name: 'keychain_completed', type: 'INTEGER DEFAULT 0' }
+        ]
+    },
+    // Phase 4: Knowledge Base - Document Management
+    documents: {
+        columns: [
+            { name: 'id', type: 'TEXT PRIMARY KEY' },
+            { name: 'uid', type: 'TEXT NOT NULL' }, // Owner
+            { name: 'title', type: 'TEXT NOT NULL' }, // Document title
+            { name: 'filename', type: 'TEXT NOT NULL' }, // Original filename
+            { name: 'file_type', type: 'TEXT NOT NULL' }, // pdf, docx, txt, md
+            { name: 'file_size', type: 'INTEGER' }, // Size in bytes
+            { name: 'file_path', type: 'TEXT' }, // Local file path or cloud URL
+            { name: 'content', type: 'TEXT' }, // Extracted text content
+            { name: 'tags', type: 'TEXT' }, // JSON array of tags
+            { name: 'description', type: 'TEXT' }, // Optional description
+            { name: 'chunk_count', type: 'INTEGER DEFAULT 0' }, // Number of chunks
+            { name: 'indexed', type: 'INTEGER DEFAULT 0' }, // 1 if indexed with embeddings
+            { name: 'created_at', type: 'INTEGER' },
+            { name: 'updated_at', type: 'INTEGER' },
+            { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' }
+        ]
+    },
+    // Phase 4: Knowledge Base - Document Chunks for Semantic Search
+    document_chunks: {
+        columns: [
+            { name: 'id', type: 'TEXT PRIMARY KEY' },
+            { name: 'document_id', type: 'TEXT NOT NULL' }, // Foreign key to documents
+            { name: 'chunk_index', type: 'INTEGER NOT NULL' }, // Order in document
+            { name: 'content', type: 'TEXT NOT NULL' }, // Chunk text
+            { name: 'char_start', type: 'INTEGER' }, // Start position in original
+            { name: 'char_end', type: 'INTEGER' }, // End position in original
+            { name: 'token_count', type: 'INTEGER' }, // Estimated tokens
+            { name: 'embedding', type: 'TEXT' }, // JSON array of vector floats
+            { name: 'created_at', type: 'INTEGER' },
+            { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' }
+        ]
+    },
+    // Phase 4: Knowledge Base - Citation Tracking
+    document_citations: {
+        columns: [
+            { name: 'id', type: 'TEXT PRIMARY KEY' },
+            { name: 'session_id', type: 'TEXT NOT NULL' }, // Related conversation
+            { name: 'message_id', type: 'TEXT' }, // AI message that cited
+            { name: 'document_id', type: 'TEXT NOT NULL' }, // Cited document
+            { name: 'chunk_id', type: 'TEXT' }, // Specific chunk cited
+            { name: 'relevance_score', type: 'REAL' }, // Similarity score
+            { name: 'context_used', type: 'TEXT' }, // Actual text included in prompt
+            { name: 'created_at', type: 'INTEGER' },
+            { name: 'sync_state', type: 'TEXT DEFAULT \'clean\'' }
         ]
     }
 };

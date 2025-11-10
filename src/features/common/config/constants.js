@@ -108,6 +108,81 @@ const CACHE = {
 };
 
 /**
+ * Time Constants (milliseconds)
+ */
+const TIME = {
+    // Seconds
+    ONE_SECOND: 1000,
+    TWO_SECONDS: 2000,
+    FIVE_SECONDS: 5000,
+    EIGHT_SECONDS: 8000,
+    TEN_SECONDS: 10000,
+    THIRTY_SECONDS: 30000,
+
+    // Minutes
+    ONE_MINUTE: 60 * 1000,
+    TWO_MINUTES: 2 * 60 * 1000,
+    FIVE_MINUTES: 5 * 60 * 1000,
+
+    // Common timeouts
+    QUICK_TIMEOUT: 5000,          // 5 seconds
+    STANDARD_TIMEOUT: 30000,      // 30 seconds
+    LONG_TIMEOUT: 120000,         // 2 minutes
+    DOWNLOAD_TIMEOUT: 300000,     // 5 minutes
+};
+
+/**
+ * Retry Configuration
+ */
+const RETRY = {
+    MAX_ATTEMPTS: 3,
+    MAX_ATTEMPTS_NETWORK: 4,
+    INITIAL_DELAY: 1000,          // 1 second
+    BACKOFF_MULTIPLIER: 2,
+};
+
+/**
+ * Service Configuration
+ */
+const SERVICE = {
+    SYNC_INTERVAL: 30000,         // 30 seconds
+    SHUTDOWN_TIMEOUT: 8000,       // 8 seconds
+    MAX_WAIT_ATTEMPTS: 30,
+    WAIT_DELAY: 1000,             // 1 second
+};
+
+/**
+ * Model Configuration
+ */
+const MODEL = {
+    WARMUP_TIMEOUT: 120000,       // 2 minutes
+    WARMUP_COOLDOWN: 5000,        // 5 seconds
+    CHUNK_SIZE: 10,               // Process 10 items before yielding
+};
+
+/**
+ * Window Configuration
+ */
+const WINDOW = {
+    DEFAULT_WIDTH: 1200,
+    DEFAULT_HEIGHT: 600,
+    HEADER_HEIGHT: 40,
+
+    // Feature windows
+    LISTEN_MIN_WIDTH: 400,
+    LISTEN_DEFAULT_WIDTH: 400,
+    LISTEN_MAX_WIDTH: 900,
+    LISTEN_MAX_HEIGHT: 900,
+
+    ASK_DEFAULT_WIDTH: 600,
+
+    // Settings window
+    SETTINGS_WIDTH: 240,
+    SETTINGS_MAX_HEIGHT: 400,
+    SETTINGS_HIDE_DELAY: 200,
+};
+
+/**
  * Get all constants
  */
 function getAllConstants() {
@@ -121,7 +196,12 @@ function getAllConstants() {
         SORT_ORDERS,
         UPLOAD,
         VALIDATION,
-        CACHE
+        CACHE,
+        TIME,
+        RETRY,
+        SERVICE,
+        MODEL,
+        WINDOW
     };
 }
 
@@ -136,5 +216,10 @@ module.exports = {
     UPLOAD,
     VALIDATION,
     CACHE,
+    TIME,
+    RETRY,
+    SERVICE,
+    MODEL,
+    WINDOW,
     getAllConstants
 };

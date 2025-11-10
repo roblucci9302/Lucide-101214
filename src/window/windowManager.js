@@ -6,6 +6,7 @@ const os = require('os');
 const shortcutsService = require('../features/shortcuts/shortcutsService');
 const internalBridge = require('../bridge/internalBridge');
 const permissionRepository = require('../features/common/repositories/permission');
+const { WINDOW } = require('../features/common/config/constants');
 
 /* ────────────────[ GLASS BYPASS ]─────────────── */
 let liquidGlass;
@@ -317,7 +318,7 @@ async function handleWindowVisibilityRequest(windowPool, layoutManager, movement
                     win.hide();
                 }
                 settingsHideTimer = null;
-            }, 200);
+            }, WINDOW.SETTINGS_HIDE_DELAY);
 
             win.__lockedByButton = false;
         }
@@ -463,8 +464,11 @@ function createFeatureWindows(header, namesToCreate) {
         switch (name) {
             case 'listen': {
                 const listen = new BrowserWindow({
-                    ...commonChildOptions, width:400,minWidth:400,maxWidth:900,
-                    maxHeight:900,
+                    ...commonChildOptions,
+                    width: WINDOW.LISTEN_DEFAULT_WIDTH,
+                    minWidth: WINDOW.LISTEN_MIN_WIDTH,
+                    maxWidth: WINDOW.LISTEN_MAX_WIDTH,
+                    maxHeight: WINDOW.LISTEN_MAX_HEIGHT,
                 });
                 listen.setContentProtection(isContentProtectionOn);
                 listen.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
@@ -496,7 +500,7 @@ function createFeatureWindows(header, namesToCreate) {
 
             // ask
             case 'ask': {
-                const ask = new BrowserWindow({ ...commonChildOptions, width:600 });
+                const ask = new BrowserWindow({ ...commonChildOptions, width: WINDOW.ASK_DEFAULT_WIDTH });
                 ask.setContentProtection(isContentProtectionOn);
                 ask.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
                 if (process.platform === 'darwin') {
@@ -529,7 +533,12 @@ function createFeatureWindows(header, namesToCreate) {
 
             // settings
             case 'settings': {
-                const settings = new BrowserWindow({ ...commonChildOptions, width:240, maxHeight:400, parent:undefined });
+                const settings = new BrowserWindow({
+                    ...commonChildOptions,
+                    width: WINDOW.SETTINGS_WIDTH,
+                    maxHeight: WINDOW.SETTINGS_MAX_HEIGHT,
+                    parent: undefined
+                });
                 settings.setContentProtection(isContentProtectionOn);
                 settings.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
                 if (process.platform === 'darwin') {

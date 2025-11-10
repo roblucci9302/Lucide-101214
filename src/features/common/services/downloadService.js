@@ -6,6 +6,7 @@ const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const { EventEmitter } = require('events');
+const { TIME, RETRY } = require('../config/constants');
 
 class DownloadService extends EventEmitter {
     constructor(serviceName = 'DownloadService') {
@@ -24,7 +25,7 @@ class DownloadService extends EventEmitter {
         const {
             onProgress = null,
             headers = { 'User-Agent': 'Lucide-App' },
-            timeout = 300000,
+            timeout = TIME.DOWNLOAD_TIMEOUT,
             modelId = null
         } = options;
 
@@ -113,8 +114,8 @@ class DownloadService extends EventEmitter {
      */
     async downloadWithRetry(url, destination, options = {}) {
         const {
-            maxRetries = 3,
-            retryDelay = 1000,
+            maxRetries = RETRY.MAX_ATTEMPTS,
+            retryDelay = RETRY.INITIAL_DELAY,
             expectedChecksum = null,
             modelId = null,
             ...downloadOptions

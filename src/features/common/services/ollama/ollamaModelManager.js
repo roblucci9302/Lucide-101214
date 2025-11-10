@@ -5,6 +5,7 @@ const { EventEmitter } = require('events');
 const fetch = require('node-fetch');
 const { spawnAsync } = require('../../utils/spawnHelper');
 const ollamaModelRepository = require('../../repositories/ollamaModel');
+const { MODEL } = require('../../config/constants');
 
 class OllamaModelManager extends EventEmitter {
     constructor(baseUrl) {
@@ -354,9 +355,9 @@ class OllamaModelManager extends EventEmitter {
                 status: isWarmingUp ? 'warming' : (isLoaded ? 'loaded' : (isWarmedUp ? 'ready' : 'cold'))
             });
 
-            // Yield to event loop every 10 items to prevent blocking
+            // Yield to event loop every N items to prevent blocking
             count++;
-            if (count % 10 === 0) {
+            if (count % MODEL.CHUNK_SIZE === 0) {
                 await new Promise(resolve => setImmediate(resolve));
             }
         }
@@ -375,9 +376,9 @@ class OllamaModelManager extends EventEmitter {
                     progress: progress
                 });
 
-                // Yield to event loop every 10 items
+                // Yield to event loop every N items
                 count++;
-                if (count % 10 === 0) {
+                if (count % MODEL.CHUNK_SIZE === 0) {
                     await new Promise(resolve => setImmediate(resolve));
                 }
             }

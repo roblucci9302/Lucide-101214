@@ -3,6 +3,7 @@
  */
 const { EventEmitter } = require('events');
 const ollamaModelRepository = require('../../repositories/ollamaModel');
+const { MODEL } = require('../../config/constants');
 
 class OllamaWarmup extends EventEmitter {
     constructor() {
@@ -13,7 +14,7 @@ class OllamaWarmup extends EventEmitter {
         this.warmingModels = new Map(); // modelName -> Promise
         this.warmedModels = new Set(); // Successfully warmed models
         this.lastWarmUpAttempt = new Map(); // modelName -> timestamp
-        this.warmupTimeout = 120000; // 120s for model warmup
+        this.warmupTimeout = MODEL.WARMUP_TIMEOUT;
     }
 
     /**
@@ -45,7 +46,7 @@ class OllamaWarmup extends EventEmitter {
         // Check rate limiting (prevent too frequent attempts)
         const lastAttempt = this.lastWarmUpAttempt.get(modelName);
         const now = Date.now();
-        if (lastAttempt && (now - lastAttempt) < 5000) { // 5 second cooldown
+        if (lastAttempt && (now - lastAttempt) < MODEL.WARMUP_COOLDOWN) {
             console.log(`[${this.serviceName}] Rate limiting warm-up for ${modelName}, try again in ${5 - Math.floor((now - lastAttempt) / 1000)}s`);
             return false;
         }

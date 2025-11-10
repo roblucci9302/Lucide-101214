@@ -2,6 +2,7 @@
  * OllamaShutdown - Platform-specific Ollama service shutdown logic
  */
 const { spawnAsync } = require('../../utils/spawnHelper');
+const { TIME } = require('../../config/constants');
 
 class OllamaShutdown {
     constructor(serviceName = 'OllamaShutdown') {
@@ -44,7 +45,7 @@ class OllamaShutdown {
             }
 
             // 3. Wait a moment for shutdown
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, TIME.TWO_SECONDS));
 
             // 4. Force kill any remaining ollama processes
             if (force || await isServiceRunning()) {

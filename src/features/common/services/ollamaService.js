@@ -9,6 +9,7 @@ const fetch = require('node-fetch');
 const fs = require('fs').promises;
 const { spawnAsync } = require('../utils/spawnHelper');
 const ollamaModelRepository = require('../repositories/ollamaModel');
+const { TIME, SERVICE } = require('../config/constants');
 
 // Import modular components
 const OllamaDownloader = require('./ollama/ollamaDownloader');
@@ -34,7 +35,7 @@ class OllamaService extends EventEmitter {
 
         // Request management
         this.activeRequest = null;
-        this.requestTimeout = 30000; // 30 seconds
+        this.requestTimeout = TIME.STANDARD_TIMEOUT;
 
         // State synchronization
         this._lastState = null;
@@ -89,7 +90,7 @@ class OllamaService extends EventEmitter {
         }
     }
 
-    async waitForService(checkFn, maxAttempts = 30, delayMs = 1000) {
+    async waitForService(checkFn, maxAttempts = SERVICE.MAX_WAIT_ATTEMPTS, delayMs = SERVICE.WAIT_DELAY) {
         for (let i = 0; i < maxAttempts; i++) {
             if (await checkFn()) {
                 console.log(`[${this.serviceName}] Service is ready`);
@@ -348,7 +349,7 @@ class OllamaService extends EventEmitter {
 
         this._syncInterval = setInterval(() => {
             this.syncState();
-        }, 30000); // 30 seconds
+        }, SERVICE.SYNC_INTERVAL);
     }
 
     stopPeriodicSync() {

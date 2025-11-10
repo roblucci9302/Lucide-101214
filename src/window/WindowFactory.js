@@ -4,6 +4,7 @@
  */
 const { BrowserWindow } = require('electron');
 const path = require('node:path');
+const { WINDOW } = require('../features/common/config/constants');
 
 /**
  * Common window configurations
@@ -20,8 +21,8 @@ const WINDOW_PRESETS = {
 
     // Header window (main control bar)
     header: {
-        width: 1200,
-        height: 40,
+        width: WINDOW.DEFAULT_WIDTH,
+        height: WINDOW.HEADER_HEIGHT,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -34,7 +35,7 @@ const WINDOW_PRESETS = {
 
     // Feature windows (listen, ask, summary, etc.)
     feature: {
-        width: 1200,
+        width: WINDOW.DEFAULT_WIDTH,
         height: 0,
         frame: false,
         transparent: true,
@@ -48,8 +49,8 @@ const WINDOW_PRESETS = {
 
     // Settings window
     settings: {
-        width: 240,
-        maxHeight: 400,
+        width: WINDOW.SETTINGS_WIDTH,
+        maxHeight: WINDOW.SETTINGS_MAX_HEIGHT,
         frame: false,
         transparent: true,
         resizable: false,
@@ -62,7 +63,7 @@ const WINDOW_PRESETS = {
     // Shortcut editor window
     shortcutEditor: {
         width: 500,
-        height: 600,
+        height: WINDOW.DEFAULT_HEIGHT,
         frame: false,
         transparent: true,
         resizable: false,
@@ -73,8 +74,8 @@ const WINDOW_PRESETS = {
 
     // Login window
     login: {
-        width: 600,
-        height: 600,
+        width: WINDOW.ASK_DEFAULT_WIDTH,
+        height: WINDOW.DEFAULT_HEIGHT,
         frame: false,
         transparent: true,
         resizable: false,

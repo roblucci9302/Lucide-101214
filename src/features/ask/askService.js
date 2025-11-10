@@ -24,6 +24,8 @@ const { desktopCapturer } = require('electron');
 const modelStateService = require('../common/services/modelStateService');
 const agentProfileService = require('../common/services/agentProfileService');
 const conversationHistoryService = require('../common/services/conversationHistoryService');
+const documentService = require('../common/services/documentService');
+const ragService = require('../common/services/ragService');
 
 // Try to load sharp, but don't fail if it's not available
 let sharp;
@@ -267,6 +269,36 @@ class AskService {
                 console.log(`[AskService] Auto-generated title: "${generatedTitle}"`);
             }
 
+            // Phase 4: RAG - Retrieve relevant context from knowledge base
+            const userId = sessionRepository.getCurrentUserId ? await sessionRepository.getCurrentUserId() : null;
+            let ragContext = null;
+            let ragSources = [];
+
+            if (userId) {
+                try {
+                    // Check if user has indexed documents
+                    const stats = await documentService.getDocumentStats(userId);
+
+                    if (stats && stats.indexed_documents > 0) {
+                        console.log(`[AskService] RAG: User has ${stats.indexed_documents} indexed documents, retrieving context...`);
+
+                        // Retrieve relevant context
+                        ragContext = await ragService.retrieveContext(userPrompt, {
+                            maxChunks: 5,
+                            minScore: 0.7
+                        });
+
+                        if (ragContext && ragContext.hasContext) {
+                            ragSources = ragContext.sources || [];
+                            console.log(`[AskService] RAG: Retrieved ${ragSources.length} relevant chunks (${ragContext.totalTokens} tokens)`);
+                        }
+                    }
+                } catch (ragError) {
+                    console.warn('[AskService] RAG: Error retrieving context, continuing without RAG:', ragError);
+                    // Continue without RAG if it fails
+                }
+            }
+
             const modelInfo = await modelStateService.getCurrentModelInfo('llm');
             if (!modelInfo || !modelInfo.apiKey) {
                 throw new Error('AI model or API key not configured.');
@@ -277,7 +309,24 @@ class AskService {
             const screenshotBase64 = screenshotResult.success ? screenshotResult.base64 : null;
 
             const conversationHistory = this._formatConversationForPrompt(conversationHistoryRaw);
-            const systemPrompt = getSystemPrompt(activeProfile, conversationHistory, false);
+            let systemPrompt = getSystemPrompt(activeProfile, conversationHistory, false);
+
+            // Phase 4: RAG - Enrich system prompt with knowledge base context
+            if (ragContext && ragContext.hasContext) {
+                try {
+                    const enriched = await ragService.buildEnrichedPrompt(
+                        userPrompt,
+                        systemPrompt,
+                        ragContext
+                    );
+
+                    systemPrompt = enriched.prompt;
+                    console.log(`[AskService] RAG: System prompt enriched with ${ragSources.length} sources`);
+                } catch (enrichError) {
+                    console.warn('[AskService] RAG: Error enriching prompt, using base prompt:', enrichError);
+                    // Continue with base prompt if enrichment fails
+                }
+            }
 
             const messages = [
                 { role: 'system', content: systemPrompt },
@@ -321,7 +370,7 @@ class AskService {
                     reader.cancel(signal.reason).catch(() => { /* 이미 취소된 경우의 오류는 무시 */ });
                 });
 
-                await this._processStream(reader, askWin, sessionId, signal);
+                await this._processStream(reader, askWin, sessionId, signal, ragSources);
                 return { success: true };
 
             } catch (multimodalError) {
@@ -353,7 +402,7 @@ class AskService {
                         fallbackReader.cancel(signal.reason).catch(() => {});
                     });
 
-                    await this._processStream(fallbackReader, askWin, sessionId, signal);
+                    await this._processStream(fallbackReader, askWin, sessionId, signal, ragSources);
                     return { success: true };
                 } else {
                     // 다른 종류의 에러이거나 스크린샷이 없었다면 그대로 throw
@@ -390,7 +439,7 @@ class AskService {
      * @returns {Promise<void>}
      * @private
      */
-    async _processStream(reader, askWin, sessionId, signal) {
+    async _processStream(reader, askWin, sessionId, signal, ragSources = []) {
         const decoder = new TextDecoder();
         let fullResponse = '';
 
@@ -439,8 +488,20 @@ class AskService {
             this._broadcastState();
             if (fullResponse) {
                  try {
-                    await askRepository.addAiMessage({ sessionId, role: 'assistant', content: fullResponse });
+                    const messageRecord = await askRepository.addAiMessage({ sessionId, role: 'assistant', content: fullResponse });
                     console.log(`[AskService] DB: Saved partial or full assistant response to session ${sessionId} after stream ended.`);
+
+                    // Phase 4: RAG - Track citations if context was used
+                    if (ragSources && ragSources.length > 0) {
+                        try {
+                            const messageId = messageRecord?.id || null;
+                            await ragService.trackCitations(sessionId, messageId, ragSources);
+                            console.log(`[AskService] RAG: Tracked ${ragSources.length} citations for session ${sessionId}`);
+                        } catch (citationError) {
+                            console.warn('[AskService] RAG: Error tracking citations:', citationError);
+                            // Non-critical error, don't fail the whole operation
+                        }
+                    }
                 } catch(dbError) {
                     console.error("[AskService] DB: Failed to save assistant response after stream ended:", dbError);
                 }

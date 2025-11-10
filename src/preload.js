@@ -293,7 +293,8 @@ contextBridge.exposeInMainWorld('api', {
     getAllDocuments: () => ipcRenderer.invoke('documents:get-all'),
     searchDocuments: (query, filters) => ipcRenderer.invoke('documents:search', query, filters),
     getStats: () => ipcRenderer.invoke('documents:get-stats'),
-    deleteDocument: (documentId) => ipcRenderer.invoke('documents:delete', documentId)
+    deleteDocument: (documentId) => ipcRenderer.invoke('documents:delete', documentId),
+    uploadDocument: () => ipcRenderer.invoke('documents:upload')
   },
 
   // Phase 4: RAG (Retrieval Augmented Generation)

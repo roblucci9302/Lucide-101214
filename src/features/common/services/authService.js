@@ -46,6 +46,9 @@ class AuthService {
         // This ensures the key is ready before any login/logout state change.
         this.initializationPromise = null;
 
+        // Store unsubscribe function for Firebase auth listener
+        this.authUnsubscribe = null;
+
         sessionRepository.setAuthService(this);
     }
 
@@ -54,7 +57,8 @@ class AuthService {
 
         this.initializationPromise = new Promise((resolve) => {
             const auth = getFirebaseAuth();
-            onAuthStateChanged(auth, async (user) => {
+            // Store unsubscribe function for cleanup
+            this.authUnsubscribe = onAuthStateChanged(auth, async (user) => {
                 const previousUser = this.currentUser;
 
                 if (user) {
@@ -211,6 +215,24 @@ class AuthService {
             // hasApiKey: this.hasApiKey
             //////// before_modelStateService ////////
         };
+    }
+
+    /**
+     * Cleanup Firebase auth listener to prevent memory leaks
+     * Should be called before app shutdown
+     */
+    cleanup() {
+        console.log('[AuthService] Cleaning up Firebase auth listener...');
+
+        if (this.authUnsubscribe) {
+            try {
+                this.authUnsubscribe();
+                this.authUnsubscribe = null;
+                console.log('[AuthService] Firebase auth listener unsubscribed');
+            } catch (error) {
+                console.error('[AuthService] Error unsubscribing Firebase auth listener:', error);
+            }
+        }
     }
 }
 

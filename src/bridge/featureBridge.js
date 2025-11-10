@@ -21,6 +21,14 @@ const documentService = require('../features/common/services/documentService');
 const indexingService = require('../features/common/services/indexingService');
 const ragService = require('../features/common/services/ragService');
 
+// Track event listeners for cleanup
+const eventListeners = [];
+
+function trackListener(emitter, event, handler) {
+  emitter.on(event, handler);
+  eventListeners.push({ emitter, event, handler });
+}
+
 module.exports = {
   // Renderer로부터의 요청을 수신하고 서비스로 전달
   initialize() {
@@ -297,7 +305,8 @@ module.exports = {
     ipcMain.handle('model:re-initialize-state', async () => await modelStateService.initialize());
 
     // LocalAIManager 이벤트를 모든 윈도우에 브로드캐스트
-    localAIManager.on('install-progress', (service, data) => {
+    // Track listeners for cleanup
+    trackListener(localAIManager, 'install-progress', (service, data) => {
       const event = { service, ...data };
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
@@ -305,14 +314,14 @@ module.exports = {
         }
       });
     });
-    localAIManager.on('installation-complete', (service) => {
+    trackListener(localAIManager, 'installation-complete', (service) => {
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
           win.webContents.send('localai:installation-complete', { service });
         }
       });
     });
-    localAIManager.on('error', (error) => {
+    trackListener(localAIManager, 'error', (error) => {
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
           win.webContents.send('localai:error-occurred', error);
@@ -320,21 +329,21 @@ module.exports = {
       });
     });
     // Handle error-occurred events from LocalAIManager's error handling
-    localAIManager.on('error-occurred', (error) => {
+    trackListener(localAIManager, 'error-occurred', (error) => {
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
           win.webContents.send('localai:error-occurred', error);
         }
       });
     });
-    localAIManager.on('model-ready', (data) => {
+    trackListener(localAIManager, 'model-ready', (data) => {
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
           win.webContents.send('localai:model-ready', data);
         }
       });
     });
-    localAIManager.on('state-changed', (service, state) => {
+    trackListener(localAIManager, 'state-changed', (service, state) => {
       const event = { service, ...state };
       BrowserWindow.getAllWindows().forEach(win => {
         if (win && !win.isDestroyed()) {
@@ -406,6 +415,27 @@ module.exports = {
     });
 
     console.log('[FeatureBridge] Initialized with all feature handlers.');
+  },
+
+  /**
+   * Cleanup all event listeners to prevent memory leaks
+   * Should be called before app shutdown
+   */
+  cleanup() {
+    console.log('[FeatureBridge] Cleaning up event listeners...');
+
+    eventListeners.forEach(({ emitter, event, handler }) => {
+      try {
+        emitter.removeListener(event, handler);
+      } catch (error) {
+        console.error(`[FeatureBridge] Error removing listener for event '${event}':`, error);
+      }
+    });
+
+    // Clear the array
+    eventListeners.length = 0;
+
+    console.log('[FeatureBridge] Event listeners cleanup complete');
   },
 
   // Renderer로 상태를 전송

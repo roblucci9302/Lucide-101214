@@ -960,6 +960,34 @@ class OllamaService extends EventEmitter {
         }
     }
 
+    /**
+     * Cleanup all Maps, Sets, and Arrays to prevent memory leaks
+     * Called during shutdown
+     */
+    cleanup() {
+        console.log('[OllamaService] Cleaning up memory structures...');
+
+        // Clear all Maps
+        this.installedModels.clear();
+        this.modelWarmupStatus.clear();
+        this.installationProgress.clear();
+        this.warmingModels.clear();
+        this.lastWarmUpAttempt.clear();
+        this.modelLoadStatus.clear();
+
+        // Clear all Sets
+        this.warmedModels.clear();
+
+        // Clear Arrays
+        this.installCheckpoints = [];
+        this._lastLoadedModels = [];
+
+        // Reset state
+        this._lastState = null;
+
+        console.log('[OllamaService] Memory cleanup complete');
+    }
+
     async warmUpModel(modelName, forceRefresh = false) {
         if (!modelName?.trim()) {
             console.warn(`[OllamaService] Invalid model name for warm-up`);
@@ -1158,6 +1186,7 @@ class OllamaService extends EventEmitter {
         // Clean up all resources
         this._clearWarmUpCache();
         this.stopPeriodicSync();
+        this.cleanup();
         
         // 프로세스 종료
         const isRunning = await this.isServiceRunning();

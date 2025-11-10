@@ -17,24 +17,24 @@ class WhisperService extends EventEmitter {
     constructor() {
         super();
         this.serviceName = 'WhisperService';
-        
-        // 경로 및 디렉토리
+
+        // Paths and directories
         this.whisperPath = null;
         this.modelsDir = null;
         this.tempDir = null;
-        
-        // 세션 관리 (세션 풀 내장)
+
+        // Session management (session pool embedded)
         this.sessionPool = [];
         this.activeSessions = new Map();
         this.maxSessions = 3;
-        
-        // 설치 상태
+
+        // Installation state
         this.installState = {
             isInstalled: false,
             isInitialized: false
         };
-        
-        // 사용 가능한 모델
+
+        // Available models
         this.availableModels = {
             'whisper-tiny': {
                 name: 'Tiny',
@@ -282,8 +282,8 @@ class WhisperService extends EventEmitter {
             
             this.modelsDir = path.join(whisperDir, 'models');
             this.tempDir = path.join(whisperDir, 'temp');
-            
-            // Windows에서는 .exe 확장자 필요
+
+            // Windows requires .exe extension
             const platform = this.getPlatform();
             const whisperExecutable = platform === 'win32' ? 'whisper-whisper.exe' : 'whisper';
             this.whisperPath = path.join(whisperDir, 'bin', whisperExecutable);
@@ -295,7 +295,7 @@ class WhisperService extends EventEmitter {
             console.log('[WhisperService] Initialized successfully');
         } catch (error) {
             console.error('[WhisperService] Initialization failed:', error);
-            // Emit error event - LocalAIManager가 처리
+            // Emit error event - handled by LocalAIManager
             this.emit('error', {
                 errorType: 'initialization-failed',
                 error: error.message
@@ -456,18 +456,18 @@ class WhisperService extends EventEmitter {
         const modelInfo = this.availableModels[modelId];
         const modelPath = await this.getModelPath(modelId);
         const checksumInfo = DOWNLOAD_CHECKSUMS.whisper.models[modelId];
-        
-        // Emit progress event - LocalAIManager가 처리
-        this.emit('install-progress', { 
-            model: modelId, 
-            progress: 0 
+
+        // Emit progress event - handled by LocalAIManager
+        this.emit('install-progress', {
+            model: modelId,
+            progress: 0
         });
-        
+
         await this.downloadWithRetry(modelInfo.url, modelPath, {
             expectedChecksum: checksumInfo?.sha256,
             modelId, // pass modelId to LocalAIServiceBase for event handling
             onProgress: (progress) => {
-                // Emit progress event - LocalAIManager가 처리
+                // Emit progress event - handled by LocalAIManager
                 this.emit('install-progress', { 
                     model: modelId, 
                     progress 
@@ -678,8 +678,8 @@ class WhisperService extends EventEmitter {
             
             console.log('[WhisperService] Step 2: Extracting archive...');
             const extractDir = path.join(this.tempDir, 'extracted');
-            
-            // 임시 압축 해제 디렉토리 생성
+
+            // Create temporary extraction directory
             await fsPromises.mkdir(extractDir, { recursive: true });
 
             // Security: Validate paths to prevent PowerShell injection
@@ -702,26 +702,26 @@ class WhisperService extends EventEmitter {
             await spawnAsync('powershell', ['-command', expandCommand]);
             
             console.log('[WhisperService] Step 3: Finding and moving whisper executable...');
-            
-            // 압축 해제된 디렉토리에서 whisper.exe 파일 찾기
+
+            // Find whisper.exe files in extracted directory
             const whisperExecutables = await this.findWhisperExecutables(extractDir);
-            
+
             if (whisperExecutables.length === 0) {
                 throw new Error('whisper.exe not found in extracted files');
             }
-            
-            // 첫 번째로 찾은 whisper.exe를 목표 위치로 복사
+
+            // Copy first found whisper.exe to target location
             const sourceExecutable = whisperExecutables[0];
             const targetDir = path.dirname(this.whisperPath);
             await fsPromises.mkdir(targetDir, { recursive: true });
             await fsPromises.copyFile(sourceExecutable, this.whisperPath);
             
             console.log('[WhisperService] Step 4: Verifying installation...');
-            
-            // 설치 검증
+
+            // Verify installation
             await fsPromises.access(this.whisperPath, fs.constants.F_OK);
-            
-            // whisper.exe 실행 테스트
+
+            // Test whisper.exe execution
             try {
                 await spawnAsync(this.whisperPath, ['--help']);
                 console.log('[WhisperService] Whisper executable verified successfully');
@@ -730,26 +730,26 @@ class WhisperService extends EventEmitter {
             }
             
             console.log('[WhisperService] Step 5: Cleanup...');
-            
-            // 임시 파일 정리
+
+            // Clean up temporary files
             await fsPromises.unlink(tempFile).catch(() => {});
             await this.removeDirectory(extractDir).catch(() => {});
-            
+
             console.log('[WhisperService] Whisper installed successfully on Windows');
             return true;
-            
+
         } catch (error) {
             console.error('[WhisperService] Windows installation failed:', error);
-            
-            // 실패 시 임시 파일 정리
+
+            // Clean up temporary files on failure
             await fsPromises.unlink(tempFile).catch(() => {});
             await this.removeDirectory(path.join(this.tempDir, 'extracted')).catch(() => {});
             
             throw new Error(`Failed to install Whisper on Windows: ${error.message}`);
         }
     }
-    
-    // 압축 해제된 디렉토리에서 whisper.exe 파일들을 재귀적으로 찾기
+
+    // Recursively find whisper.exe files in extracted directory
     async findWhisperExecutables(dir) {
         const executables = [];
         
@@ -772,8 +772,8 @@ class WhisperService extends EventEmitter {
         
         return executables;
     }
-    
-    // 디렉토리 재귀적 삭제
+
+    // Recursively delete directory
     async removeDirectory(dir) {
         try {
             const items = await fsPromises.readdir(dir, { withFileTypes: true });
@@ -849,23 +849,23 @@ class WhisperSession {
     }
 
     startProcessingLoop() {
-        // TODO: 실제 처리 루프 구현
+        // TODO: Implement actual processing loop
     }
 
     async cleanup() {
-        // 임시 파일 정리
+        // Clean up temporary files
         await this.cleanupTempFiles();
     }
 
     async cleanupTempFiles() {
-        // TODO: 임시 파일 정리 구현
+        // TODO: Implement temporary file cleanup
     }
 
     async destroy() {
         if (this.process) {
             this.process.kill();
         }
-        // 임시 파일 정리
+        // Clean up temporary files
         await this.cleanupTempFiles();
     }
 }

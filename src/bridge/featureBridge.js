@@ -142,6 +142,18 @@ module.exports = {
             const filePath = result.filePaths[0];
             const filename = path.basename(filePath);
 
+            // Check file size before reading (prevent DoS)
+            const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+            const stats = await fs.stat(filePath);
+
+            if (stats.size > MAX_FILE_SIZE) {
+                console.warn(`[FeatureBridge] File too large: ${stats.size} bytes (max: ${MAX_FILE_SIZE})`);
+                return {
+                    success: false,
+                    error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`
+                };
+            }
+
             // Read file buffer
             const buffer = await fs.readFile(filePath);
 

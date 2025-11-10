@@ -337,17 +337,21 @@ class IndexingService {
     }
 
     /**
-     * Insert chunks into database
+     * Insert chunks into database (batch insert for performance)
      * @private
      */
     async _insertChunks(chunks) {
-        for (const chunk of chunks) {
-            const columns = Object.keys(chunk).join(', ');
-            const placeholders = Object.keys(chunk).map(() => '?').join(', ');
-            const query = `INSERT INTO document_chunks (${columns}) VALUES (${placeholders})`;
+        if (chunks.length === 0) return;
 
-            await this.chunksRepository.execute(query, Object.values(chunk));
-        }
+        // Batch insert: all chunks in one query
+        const columns = Object.keys(chunks[0]).join(', ');
+        const placeholderRow = `(${Object.keys(chunks[0]).map(() => '?').join(', ')})`;
+        const allPlaceholders = chunks.map(() => placeholderRow).join(', ');
+
+        const query = `INSERT INTO document_chunks (${columns}) VALUES ${allPlaceholders}`;
+        const allValues = chunks.flatMap(chunk => Object.values(chunk));
+
+        await this.chunksRepository.execute(query, allValues);
     }
 }
 

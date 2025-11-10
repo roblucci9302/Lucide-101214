@@ -63,14 +63,30 @@ class RAGService {
                 };
             }
 
-            // Get document metadata for chunks
+            // Get document metadata for chunks (batch query to avoid N+1)
+            const uniqueDocIds = [...new Set(chunks.map(c => c.document_id))];
             const documentMap = new Map();
-            for (const chunk of chunks) {
-                if (!documentMap.has(chunk.document_id)) {
-                    const doc = await documentService.getDocument(chunk.document_id, false);
-                    if (doc) {
-                        documentMap.set(chunk.document_id, doc);
-                    }
+
+            if (uniqueDocIds.length > 0) {
+                // Fetch all documents in one query
+                const query = `
+                    SELECT id, uid, title, filename, file_type, file_size,
+                           tags, description, chunk_count, indexed,
+                           created_at, updated_at
+                    FROM documents
+                    WHERE id IN (${uniqueDocIds.map(() => '?').join(',')})
+                `;
+
+                try {
+                    const docs = await documentService.documentsRepository.query(query, uniqueDocIds);
+                    docs.forEach(doc => {
+                        documentMap.set(doc.id, {
+                            ...doc,
+                            tags: doc.tags ? JSON.parse(doc.tags) : []
+                        });
+                    });
+                } catch (error) {
+                    console.error('[RAGService] Error fetching documents:', error);
                 }
             }
 
@@ -187,30 +203,29 @@ IMPORTANT INSTRUCTIONS FOR USING CONTEXT:
         console.log(`[RAGService] Tracking ${sources.length} citations`);
 
         try {
-            const citations = [];
+            if (sources.length === 0) return [];
 
-            for (const source of sources) {
-                const citation = {
-                    id: uuidv4(),
-                    session_id: sessionId,
-                    message_id: messageId,
-                    document_id: source.document_id,
-                    chunk_id: source.chunk_id,
-                    relevance_score: source.relevance_score,
-                    context_used: source.content,
-                    created_at: Date.now(),
-                    sync_state: 'clean'
-                };
+            const citations = sources.map(source => ({
+                id: uuidv4(),
+                session_id: sessionId,
+                message_id: messageId,
+                document_id: source.document_id,
+                chunk_id: source.chunk_id,
+                relevance_score: source.relevance_score,
+                context_used: source.content,
+                created_at: Date.now(),
+                sync_state: 'clean'
+            }));
 
-                // Insert into database
-                const columns = Object.keys(citation).join(', ');
-                const placeholders = Object.keys(citation).map(() => '?').join(', ');
-                const query = `INSERT INTO document_citations (${columns}) VALUES (${placeholders})`;
+            // Batch insert: all citations in one query
+            const columns = Object.keys(citations[0]).join(', ');
+            const placeholderRow = `(${Object.keys(citations[0]).map(() => '?').join(', ')})`;
+            const allPlaceholders = citations.map(() => placeholderRow).join(', ');
 
-                await this.citationsRepository.execute(query, Object.values(citation));
+            const query = `INSERT INTO document_citations (${columns}) VALUES ${allPlaceholders}`;
+            const allValues = citations.flatMap(citation => Object.values(citation));
 
-                citations.push(citation);
-            }
+            await this.citationsRepository.execute(query, allValues);
 
             console.log(`[RAGService] Citations tracked: ${citations.length}`);
 

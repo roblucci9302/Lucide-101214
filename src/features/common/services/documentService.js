@@ -48,6 +48,14 @@ class DocumentService {
         console.log(`[DocumentService] Getting documents for user: ${uid}`);
 
         try {
+            // Validate sortBy to prevent SQL injection
+            const ALLOWED_SORT_COLUMNS = ['created_at', 'updated_at', 'title', 'filename', 'file_size', 'file_type'];
+            const validSortBy = ALLOWED_SORT_COLUMNS.includes(sortBy) ? sortBy : 'created_at';
+
+            // Validate order to prevent SQL injection
+            const ALLOWED_ORDERS = ['ASC', 'DESC'];
+            const validOrder = ALLOWED_ORDERS.includes(order.toUpperCase()) ? order.toUpperCase() : 'DESC';
+
             // Query documents from database
             const query = `
                 SELECT
@@ -56,7 +64,7 @@ class DocumentService {
                     created_at, updated_at
                 FROM documents
                 WHERE uid = ?
-                ORDER BY ${sortBy} ${order}
+                ORDER BY ${validSortBy} ${validOrder}
                 LIMIT ? OFFSET ?
             `;
 

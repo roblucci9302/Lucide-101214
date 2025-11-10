@@ -6,6 +6,7 @@ const os = require('os');
 const shortcutsService = require('../features/shortcuts/shortcutsService');
 const internalBridge = require('../bridge/internalBridge');
 const permissionRepository = require('../features/common/repositories/permission');
+const { WINDOW } = require('../features/common/config/constants');
 
 /* ────────────────[ GLASS BYPASS ]─────────────── */
 let liquidGlass;
@@ -14,8 +15,7 @@ const isLiquidGlassSupported = () => {
         return false;
     }
     const majorVersion = parseInt(os.release().split('.')[0], 10);
-    // return majorVersion >= 25; // macOS 26+ (Darwin 25+)
-    return majorVersion >= 26; // See you soon!
+    return majorVersion >= 26;
 };
 let shouldUseLiquidGlass = isLiquidGlassSupported();
 if (shouldUseLiquidGlass) {
@@ -42,8 +42,6 @@ let movementManager = null;
 
 
 function updateChildWindowLayouts(animated = true) {
-    // if (movementManager.isAnimating) return;
-
     const visibleWindows = {};
     const listenWin = windowPool.get('listen');
     const askWin = windowPool.get('ask');
@@ -109,7 +107,6 @@ function setupWindowController(windowPool, layoutManager, movementManager) {
         changeAllWindowsVisibility(windowPool, targetVisibility);
     });
     internalBridge.on('window:moveToDisplay', ({ displayId }) => {
-        // movementManager.moveToDisplay(displayId);
         const header = windowPool.get('header');
         if (header) {
             const newPosition = layoutManager.calculateNewPositionForDisplay(header, displayId);
@@ -258,13 +255,14 @@ function changeAllWindowsVisibility(windowPool, targetVisibility) {
  * @param {boolean} shouldBeVisible 
  */
 async function handleWindowVisibilityRequest(windowPool, layoutManager, movementManager, name, shouldBeVisible) {
-    console.log(`[WindowManager] Request: set '${name}' visibility to ${shouldBeVisible}`);
-    const win = windowPool.get(name);
+    try {
+        console.log(`[WindowManager] Request: set '${name}' visibility to ${shouldBeVisible}`);
+        const win = windowPool.get(name);
 
-    if (!win || win.isDestroyed()) {
-        console.warn(`[WindowManager] Window '${name}' not found or destroyed.`);
-        return;
-    }
+        if (!win || win.isDestroyed()) {
+            console.warn(`[WindowManager] Window '${name}' not found or destroyed.`);
+            return;
+        }
 
     if (name !== 'settings') {
         const isCurrentlyVisible = win.isVisible();
@@ -316,7 +314,7 @@ async function handleWindowVisibilityRequest(windowPool, layoutManager, movement
                     win.hide();
                 }
                 settingsHideTimer = null;
-            }, 200);
+            }, WINDOW.SETTINGS_HIDE_DELAY);
 
             win.__lockedByButton = false;
         }
@@ -402,6 +400,10 @@ async function handleWindowVisibilityRequest(windowPool, layoutManager, movement
             movementManager.animateLayout(otherWindowsLayout);
         }
     }
+    } catch (error) {
+        console.error(`[WindowManager] Error handling visibility request for '${name}':`, error);
+        // Graceful degradation - don't crash the app
+    }
 }
 
 
@@ -433,8 +435,6 @@ const openLoginPage = () => {
 
 
 function createFeatureWindows(header, namesToCreate) {
-    // if (windowPool.has('listen')) return;
-
     const commonChildOptions = {
         parent: header,
         show: false,
@@ -458,8 +458,11 @@ function createFeatureWindows(header, namesToCreate) {
         switch (name) {
             case 'listen': {
                 const listen = new BrowserWindow({
-                    ...commonChildOptions, width:400,minWidth:400,maxWidth:900,
-                    maxHeight:900,
+                    ...commonChildOptions,
+                    width: WINDOW.LISTEN_DEFAULT_WIDTH,
+                    minWidth: WINDOW.LISTEN_MIN_WIDTH,
+                    maxWidth: WINDOW.LISTEN_MAX_WIDTH,
+                    maxHeight: WINDOW.LISTEN_MAX_HEIGHT,
                 });
                 listen.setContentProtection(isContentProtectionOn);
                 listen.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
@@ -491,7 +494,7 @@ function createFeatureWindows(header, namesToCreate) {
 
             // ask
             case 'ask': {
-                const ask = new BrowserWindow({ ...commonChildOptions, width:600 });
+                const ask = new BrowserWindow({ ...commonChildOptions, width: WINDOW.ASK_DEFAULT_WIDTH });
                 ask.setContentProtection(isContentProtectionOn);
                 ask.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
                 if (process.platform === 'darwin') {
@@ -524,7 +527,12 @@ function createFeatureWindows(header, namesToCreate) {
 
             // settings
             case 'settings': {
-                const settings = new BrowserWindow({ ...commonChildOptions, width:240, maxHeight:400, parent:undefined });
+                const settings = new BrowserWindow({
+                    ...commonChildOptions,
+                    width: WINDOW.SETTINGS_WIDTH,
+                    maxHeight: WINDOW.SETTINGS_MAX_HEIGHT,
+                    parent: undefined
+                });
                 settings.setContentProtection(isContentProtectionOn);
                 settings.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
                 if (process.platform === 'darwin') {
@@ -667,7 +675,6 @@ function createWindows() {
             contextIsolation: true,
             preload: path.join(__dirname, '../preload.js'),
             backgroundThrottling: false,
-            webSecurity: false,
             enableRemoteModule: false,
             // Ensure proper rendering and prevent pixelation
             experimentalFeatures: false,

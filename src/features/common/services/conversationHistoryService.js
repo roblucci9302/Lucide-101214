@@ -1,6 +1,22 @@
 const sqliteClient = require('./sqliteClient');
 const sessionRepository = require('../repositories/session');
 const { SessionValidator, QueryValidator } = require('../utils/validators');
+const LRUCache = require('../utils/lruCache');
+
+/**
+ * Escape SQL LIKE special characters to prevent injection
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeSqlLike(str) {
+    if (!str || typeof str !== 'string') {
+        return '';
+    }
+    return str
+        .replace(/\\/g, '\\\\')  // Escape backslash first
+        .replace(/%/g, '\\%')    // Escape percent wildcard
+        .replace(/_/g, '\\_');   // Escape underscore wildcard
+}
 
 /**
  * Service for managing conversation history and enhanced search
@@ -8,7 +24,11 @@ const { SessionValidator, QueryValidator } = require('../utils/validators');
  */
 class ConversationHistoryService {
     constructor() {
-        this.titleGenerationCache = new Map(); // Cache pour éviter de regénérer les titres
+        // LRU Cache for title generation (max 100 items, 1 hour TTL)
+        this.titleGenerationCache = new LRUCache({
+            max: 100,
+            ttl: 60 * 60 * 1000  // 1 hour in milliseconds
+        });
     }
 
     /**
@@ -89,7 +109,9 @@ class ConversationHistoryService {
                          WHERE content LIKE ?
                      ))
                 `);
-                const searchPattern = `%${query}%`;
+                // Security: Escape SQL LIKE special characters
+                const escapedQuery = escapeSqlLike(query);
+                const searchPattern = `%${escapedQuery}%`;
                 params.push(searchPattern, searchPattern, searchPattern);
             }
 

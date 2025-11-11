@@ -308,7 +308,7 @@ class AskService {
             }
 
             // Phase 4: RAG - Retrieve relevant context from knowledge base
-            const userId = sessionRepository.getCurrentUserId ? await sessionRepository.getCurrentUserId() : null;
+            // userId already declared at line 253
             let ragContext = null;
             let ragSources = [];
 

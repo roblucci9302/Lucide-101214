@@ -1,0 +1,393 @@
+/**
+ * LUCIDE RESPONSIVE STYLES
+ * Mobile-first approach avec breakpoints adaptatifs
+ * Breakpoint principal: 640px (mobile/desktop)
+ */
+
+/* ============================================
+   BREAKPOINTS SYSTÈME
+   ============================================ */
+:root {
+  --breakpoint-sm: 640px;   /* Tablets portrait */
+  --breakpoint-md: 768px;   /* Tablets landscape */
+  --breakpoint-lg: 1024px;  /* Desktop */
+  --breakpoint-xl: 1280px;  /* Large desktop */
+}
+
+
+/* ============================================
+   BASE - MOBILE FIRST (< 640px)
+   ============================================ */
+
+/* Ajustements des tokens pour mobile */
+:root {
+  /* Spacing réduit sur mobile */
+  --mobile-padding: 12px;
+  --mobile-gap: 8px;
+
+  /* Font sizes légèrement réduits */
+  --mobile-text-sm: 11px;
+  --mobile-text-base: 12px;
+  --mobile-text-lg: 14px;
+}
+
+/* Container principal mobile */
+@media (max-width: 639px) {
+  body {
+    font-size: var(--mobile-text-base);
+  }
+
+  /* Main content padding réduit */
+  [class*="content"],
+  [class*="container"] {
+    padding: var(--mobile-padding);
+  }
+
+  /* Headers compacts */
+  [class*="header"] {
+    padding: 6px 12px;
+    font-size: var(--mobile-text-base);
+  }
+
+  /* Boutons full-width sur mobile */
+  button[class*="primary"],
+  button[class*="action"] {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Modals et panels en full screen */
+  [class*="modal"],
+  [class*="panel"],
+  [class*="dialog"] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    max-width: none;
+    max-height: none;
+  }
+
+  /* Cards sans margin sur mobile */
+  [class*="card"] {
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: var(--radius-md);
+  }
+
+  /* Grids deviennent single column */
+  [class*="grid"] {
+    grid-template-columns: 1fr;
+    gap: var(--mobile-gap);
+  }
+
+  /* Navigation stack vertical */
+  nav,
+  [class*="nav"],
+  [class*="menu"] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Inputs et textareas full width */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    width: 100%;
+  }
+
+  /* Tooltips deviennent bottom sheets sur mobile */
+  [class*="tooltip"],
+  [class*="dropdown"] {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    transform: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-width: none;
+  }
+
+  /* Scrollbars cachés sur mobile (native touch) */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+
+/* ============================================
+   TABLET PORTRAIT (640px - 767px)
+   ============================================ */
+@media (min-width: 640px) and (max-width: 767px) {
+  :root {
+    --container-max-width: 600px;
+  }
+
+  /* Headers avec plus d'espace */
+  [class*="header"] {
+    padding: 8px 16px;
+  }
+
+  /* Grid 2 colonnes sur tablet portrait */
+  [class*="grid-auto"] {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+}
+
+
+/* ============================================
+   TABLET LANDSCAPE (768px - 1023px)
+   ============================================ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --container-max-width: 720px;
+  }
+
+  /* Grid 3 colonnes sur tablet landscape */
+  [class*="grid-auto"] {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-lg);
+  }
+
+  /* Sidebar collapse en tablet */
+  [class*="sidebar"] {
+    width: 240px;
+  }
+}
+
+
+/* ============================================
+   DESKTOP (1024px - 1279px)
+   ============================================ */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root {
+    --container-max-width: 960px;
+  }
+
+  /* Grid 4 colonnes sur desktop */
+  [class*="grid-auto"] {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-xl);
+  }
+}
+
+
+/* ============================================
+   LARGE DESKTOP (>= 1280px)
+   ============================================ */
+@media (min-width: 1280px) {
+  :root {
+    --container-max-width: 1200px;
+  }
+
+  /* Grid 5+ colonnes sur large desktop */
+  [class*="grid-auto"] {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-2xl);
+  }
+
+  /* Plus d'espace pour les éléments */
+  [class*="content"] {
+    padding: var(--space-2xl);
+  }
+}
+
+
+/* ============================================
+   ORIENTATION (Landscape vs Portrait)
+   ============================================ */
+
+/* Portrait: hauteur > largeur */
+@media (orientation: portrait) {
+  /* Headers fixes en portrait */
+  [class*="header"] {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+  }
+
+  /* Menus bottom sheets */
+  [class*="menu-mobile"] {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* Landscape: largeur > hauteur */
+@media (orientation: landscape) {
+  /* Hauteur max pour les modals en landscape */
+  [class*="modal"],
+  [class*="dialog"] {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+
+/* ============================================
+   TOUCH DEVICES
+   ============================================ */
+@media (hover: none) and (pointer: coarse) {
+  /* Augmenter les zones de touch */
+  button,
+  a,
+  [role="button"],
+  [class*="clickable"] {
+    min-height: 44px; /* iOS recommended touch target */
+    min-width: 44px;
+  }
+
+  /* Supprimer les hover effects sur touch */
+  *:hover {
+    /* Hover effects désactivés sur touch devices */
+  }
+
+  /* Active states plus visibles */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+
+/* ============================================
+   HIGH DPI / RETINA SCREENS
+   ============================================ */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Borders plus fins sur retina */
+  [class*="border"] {
+    border-width: 0.5px;
+  }
+
+  /* Shadows plus subtils */
+  :root {
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+
+/* ============================================
+   DARK MODE SYSTEM PREFERENCE
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-theme) {
+    /* Force dark theme si préférence système */
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not(.dark-theme) {
+    /* Option: décommenter pour forcer light si préférence système */
+    /* color-scheme: light; */
+  }
+}
+
+
+/* ============================================
+   CONTRAST & ACCESSIBILITY
+   ============================================ */
+@media (prefers-contrast: high) {
+  :root {
+    /* Augmenter les contrastes */
+    --text-primary: rgba(255, 255, 255, 1);
+    --text-secondary: rgba(255, 255, 255, 0.85);
+    --border-subtle: rgba(255, 255, 255, 0.15);
+    --border-medium: rgba(255, 255, 255, 0.25);
+    --border-strong: rgba(255, 255, 255, 0.35);
+  }
+
+  :root.light-theme {
+    --text-primary: rgba(0, 0, 0, 1);
+    --text-secondary: rgba(0, 0, 0, 0.85);
+    --border-subtle: rgba(0, 0, 0, 0.15);
+    --border-medium: rgba(0, 0, 0, 0.25);
+    --border-strong: rgba(0, 0, 0, 0.35);
+  }
+}
+
+
+/* ============================================
+   UTILITY CLASSES - RESPONSIVE
+   ============================================ */
+
+/* Visibilité responsive */
+.mobile-only {
+  display: block;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Flex direction responsive */
+.flex-responsive {
+  flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .flex-responsive {
+    flex-direction: row;
+  }
+}
+
+/* Text alignment responsive */
+.text-center-mobile {
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .text-center-mobile {
+    text-align: left;
+  }
+}
+
+/* Container responsive */
+.container-responsive {
+  width: 100%;
+  padding: 0 var(--space-lg);
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: var(--breakpoint-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: var(--breakpoint-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: var(--breakpoint-lg);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: var(--breakpoint-xl);
+  }
+}

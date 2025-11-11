@@ -1,0 +1,302 @@
+/**
+ * LUCIDE DESIGN TOKENS
+ * Design system avec support light/dark mode
+ * Variables CSS pour cohérence visuelle et maintenance
+ */
+
+/* ============================================
+   BASE - DARK THEME (défaut)
+   ============================================ */
+:root,
+:root.dark-theme {
+  /* Theme identifier */
+  --theme: 'dark';
+
+  /* ===== COLORS - BACKGROUNDS ===== */
+  --bg-primary: rgba(10, 10, 15, 0.75);
+  --bg-secondary: rgba(20, 20, 25, 0.85);
+  --bg-tertiary: rgba(30, 30, 35, 0.95);
+  --bg-overlay: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-active: rgba(255, 255, 255, 0.12);
+
+  /* ===== COLORS - BORDERS ===== */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-focus: rgba(0, 122, 255, 0.5);
+
+  /* ===== COLORS - TEXT ===== */
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+  --text-disabled: rgba(255, 255, 255, 0.25);
+  --text-inverse: rgba(0, 0, 0, 0.9);
+
+  /* ===== COLORS - STATES ===== */
+  --state-info: #007aff;
+  --state-info-hover: #0051d5;
+  --state-info-active: #003d99;
+  --state-info-bg: rgba(0, 122, 255, 0.1);
+  --state-info-glow: rgba(0, 122, 255, 0.3);
+
+  --state-success: #34c759;
+  --state-success-hover: #2aa847;
+  --state-success-active: #1f8035;
+  --state-success-bg: rgba(52, 199, 89, 0.1);
+  --state-success-glow: rgba(52, 199, 89, 0.3);
+
+  --state-warning: #ff9500;
+  --state-warning-hover: #cc7700;
+  --state-warning-active: #995900;
+  --state-warning-bg: rgba(255, 149, 0, 0.1);
+  --state-warning-glow: rgba(255, 149, 0, 0.3);
+
+  --state-error: #ff3b30;
+  --state-error-hover: #cc2e25;
+  --state-error-active: #99231c;
+  --state-error-bg: rgba(255, 59, 48, 0.1);
+  --state-error-glow: rgba(255, 59, 48, 0.3);
+
+  /* ===== GLASSMORPHISM ===== */
+  --glass-blur: 20px;
+  --glass-saturation: 150%;
+  --glass-opacity: 0.75;
+
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+
+  /* Glows lumineux (pour animations subtiles) */
+  --glow-subtle: 0 0 10px currentColor;
+  --glow-medium: 0 0 20px currentColor;
+  --glow-strong: 0 0 30px currentColor;
+
+  /* ===== SPACING ===== */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9000px; /* Pill shape */
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Monaco", "Consolas", "Courier New", monospace;
+
+  /* Font sizes (fluid responsive) */
+  --text-xs: clamp(10px, 0.8vw, 11px);
+  --text-sm: clamp(12px, 1vw, 13px);
+  --text-base: clamp(13px, 1.1vw, 14px);
+  --text-lg: clamp(15px, 1.3vw, 16px);
+  --text-xl: clamp(18px, 1.5vw, 20px);
+  --text-2xl: clamp(22px, 1.8vw, 24px);
+
+  /* Font weights */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-wider: 0.05em;
+
+  /* ===== ANIMATION TIMING ===== */
+  --timing-instant: 0.1s;
+  --timing-fast: 0.2s;
+  --timing-normal: 0.3s;
+  --timing-slow: 0.4s;
+  --timing-slower: 0.6s;
+
+  /* Easing functions (iOS-like) */
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== Z-INDEX SCALE ===== */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+:root.light-theme {
+  --theme: 'light';
+
+  /* ===== COLORS - BACKGROUNDS ===== */
+  --bg-primary: rgba(255, 255, 255, 0.75);
+  --bg-secondary: rgba(245, 245, 247, 0.85);
+  --bg-tertiary: rgba(255, 255, 255, 0.95);
+  --bg-overlay: rgba(0, 0, 0, 0.04);
+  --bg-hover: rgba(0, 0, 0, 0.06);
+  --bg-active: rgba(0, 0, 0, 0.1);
+
+  /* ===== COLORS - BORDERS ===== */
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --border-focus: rgba(0, 122, 255, 0.6);
+
+  /* ===== COLORS - TEXT ===== */
+  --text-primary: rgba(0, 0, 0, 0.9);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-tertiary: rgba(0, 0, 0, 0.4);
+  --text-disabled: rgba(0, 0, 0, 0.25);
+  --text-inverse: rgba(255, 255, 255, 0.95);
+
+  /* ===== COLORS - STATES ===== */
+  /* Info stays same */
+  --state-info: #007aff;
+  --state-info-hover: #0051d5;
+  --state-info-active: #003d99;
+  --state-info-bg: rgba(0, 122, 255, 0.08);
+  --state-info-glow: rgba(0, 122, 255, 0.25);
+
+  /* Success */
+  --state-success: #28a745;
+  --state-success-hover: #218838;
+  --state-success-active: #1e7e34;
+  --state-success-bg: rgba(40, 167, 69, 0.08);
+  --state-success-glow: rgba(40, 167, 69, 0.25);
+
+  /* Warning */
+  --state-warning: #ff9500;
+  --state-warning-hover: #cc7700;
+  --state-warning-active: #995900;
+  --state-warning-bg: rgba(255, 149, 0, 0.08);
+  --state-warning-glow: rgba(255, 149, 0, 0.25);
+
+  /* Error */
+  --state-error: #dc3545;
+  --state-error-hover: #c82333;
+  --state-error-active: #bd2130;
+  --state-error-bg: rgba(220, 53, 69, 0.08);
+  --state-error-glow: rgba(220, 53, 69, 0.25);
+
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+  --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+
+/* ============================================
+   REDUCED MOTION (Accessibilité)
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --timing-instant: 0s;
+    --timing-fast: 0s;
+    --timing-normal: 0s;
+    --timing-slow: 0s;
+    --timing-slower: 0s;
+    --easing-spring: var(--easing-standard);
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  :root {
+    --bg-primary: white;
+    --bg-secondary: white;
+    --bg-tertiary: white;
+    --text-primary: black;
+    --text-secondary: rgba(0, 0, 0, 0.7);
+    --text-tertiary: rgba(0, 0, 0, 0.5);
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --glass-blur: 0;
+  }
+}
+
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Truncate text */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Line clamp */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Visually hidden (accessible) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible (keyboard navigation) */
+.focus-visible:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}

@@ -90,7 +90,7 @@ Please build upon this context while analyzing the new conversation segments.
 `;
         }
 
-        const basePrompt = getSystemPrompt('pickle_glass_analysis', '', false);
+        const basePrompt = getSystemPrompt('meeting_assistant', '', false);
         const systemPrompt = basePrompt.replace('{{CONVERSATION_HISTORY}}', recentConversation);
 
         try {
@@ -103,7 +103,7 @@ Please build upon this context while analyzing the new conversation segments.
                 throw new Error('AI model or API key is not configured.');
             }
             console.log(`🤖 Sending analysis request to ${modelInfo.provider} using model ${modelInfo.model}`);
-            
+
             const messages = [
                 {
                     role: 'system',
@@ -113,25 +113,52 @@ Please build upon this context while analyzing the new conversation segments.
                     role: 'user',
                     content: `${contextualPrompt}
 
-Analyze the conversation and provide a structured summary. Format your response as follows:
+Analyze the conversation and provide a comprehensive meeting intelligence summary. MUST include ALL sections:
 
-**Summary Overview**
-- Main discussion point with context
+**📋 Summary Overview**
+- 3-5 concise bullet points capturing the essence (prioritize newest/most recent points)
+- Focus on outcomes, not just topics
 
-**Key Topic: [Topic Name]**
-- First key insight
-- Second key insight
-- Third key insight
+**🎯 Key Topic: [Dynamic Topic Name]**
+- Main point 1 (specific, actionable insight)
+- Main point 2 (specific, actionable insight)
+- Main point 3 (specific, actionable insight)
 
-**Extended Explanation**
-Provide 2-3 sentences explaining the context and implications.
+**📝 Extended Context**
+2-3 sentences providing deeper explanation, implications, or background that enriches understanding.
 
-**Suggested Questions**
-1. First follow-up question?
-2. Second follow-up question?
-3. Third follow-up question?
+**✅ Action Items** (CRITICAL - Extract ALL tasks)
+- [ ] **Task description** | Assigned to: [Person/Team] | Due: [Date/Timeframe]
+(Look for: "will do", "should", "needs to", "must", "can you", "let's", "I'll")
 
-Keep all points concise and build upon previous analysis if provided.`,
+**🔍 Decisions Made**
+- **Decision 1**: What was decided, why, and any alternatives considered
+- **Decision 2**: What was decided, why, and any alternatives considered
+
+**❓ Comprehension Quiz** (3-5 intelligent questions)
+1. **Question**: [Thought-provoking question requiring synthesis]
+   - a) [Option A]
+   - b) [Option B]
+   - c) [Option C]
+   - d) [Option D]
+   *Answer: [Letter] - [Brief explanation]*
+
+**💡 Contextual Insights**
+- **Background**: Relevant information participants may not know
+- **Implications**: What these decisions/discussions mean for the future
+- **Risks**: Potential challenges or concerns
+- **Opportunities**: Positive outcomes or possibilities
+
+**❗ Unresolved Items**
+- Open questions that need answers
+- Blocked tasks awaiting decisions
+
+**🔮 Suggested Follow-Up Questions**
+1. [Clarifying question based on discussion]
+2. [Probing question to deepen understanding]
+3. [Forward-looking question about next steps]
+
+Be thorough, specific, and actionable. Build upon previous analysis if provided.`,
                 },
             ];
 
@@ -190,50 +217,75 @@ Keep all points concise and build upon previous analysis if provided.`,
         const structuredData = {
             summary: [],
             topic: { header: '', bullets: [] },
+            extendedContext: '',
+            actionItems: [],
+            decisions: [],
+            quiz: [],
+            insights: {
+                background: '',
+                implications: '',
+                risks: '',
+                opportunities: ''
+            },
+            unresolvedItems: [],
+            followUpQuestions: [],
             actions: [],
             followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
         };
 
-        // 이전 결과가 있으면 기본값으로 사용
+        // Preserve previous result if available
         if (previousResult) {
-            structuredData.topic.header = previousResult.topic.header;
-            structuredData.summary = [...previousResult.summary];
+            structuredData.topic.header = previousResult.topic.header || '';
+            structuredData.summary = previousResult.summary ? [...previousResult.summary] : [];
         }
 
         try {
             const lines = responseText.split('\n');
             let currentSection = '';
-            let isCapturingTopic = false;
-            let topicName = '';
+            let currentQuizQuestion = null;
+            let currentInsightType = null;
 
             for (const line of lines) {
                 const trimmedLine = line.trim();
 
-                // 섹션 헤더 감지
-                if (trimmedLine.startsWith('**Summary Overview**')) {
+                // Section header detection
+                if (trimmedLine.includes('📋 Summary Overview') || trimmedLine.startsWith('**Summary Overview**')) {
                     currentSection = 'summary-overview';
                     continue;
-                } else if (trimmedLine.startsWith('**Key Topic:')) {
+                } else if (trimmedLine.includes('🎯 Key Topic:') || trimmedLine.startsWith('**Key Topic:')) {
                     currentSection = 'topic';
-                    isCapturingTopic = true;
-                    topicName = trimmedLine.match(/\*\*Key Topic: (.+?)\*\*/)?.[1] || '';
+                    const topicName = trimmedLine.match(/Key Topic:\s*(.+?)(?:\*\*)?$/)?.[1] || '';
                     if (topicName) {
-                        structuredData.topic.header = topicName + ':';
+                        structuredData.topic.header = topicName.trim();
                     }
                     continue;
-                } else if (trimmedLine.startsWith('**Extended Explanation**')) {
-                    currentSection = 'explanation';
+                } else if (trimmedLine.includes('📝 Extended Context') || trimmedLine.startsWith('**Extended Context**')) {
+                    currentSection = 'extended-context';
                     continue;
-                } else if (trimmedLine.startsWith('**Suggested Questions**')) {
-                    currentSection = 'questions';
+                } else if (trimmedLine.includes('✅ Action Items') || trimmedLine.startsWith('**Action Items**')) {
+                    currentSection = 'action-items';
+                    continue;
+                } else if (trimmedLine.includes('🔍 Decisions Made') || trimmedLine.startsWith('**Decisions Made**')) {
+                    currentSection = 'decisions';
+                    continue;
+                } else if (trimmedLine.includes('❓ Comprehension Quiz') || trimmedLine.startsWith('**Comprehension Quiz**')) {
+                    currentSection = 'quiz';
+                    continue;
+                } else if (trimmedLine.includes('💡 Contextual Insights') || trimmedLine.startsWith('**Contextual Insights**')) {
+                    currentSection = 'insights';
+                    continue;
+                } else if (trimmedLine.includes('❗ Unresolved Items') || trimmedLine.startsWith('**Unresolved Items**')) {
+                    currentSection = 'unresolved';
+                    continue;
+                } else if (trimmedLine.includes('🔮 Suggested Follow-Up Questions') || trimmedLine.startsWith('**Suggested Follow-Up Questions**')) {
+                    currentSection = 'follow-up-questions';
                     continue;
                 }
 
-                // 컨텐츠 파싱
+                // Content parsing
                 if (trimmedLine.startsWith('-') && currentSection === 'summary-overview') {
                     const summaryPoint = trimmedLine.substring(1).trim();
                     if (summaryPoint && !structuredData.summary.includes(summaryPoint)) {
-                        // 기존 summary 업데이트 (최대 5개 유지)
                         structuredData.summary.unshift(summaryPoint);
                         if (structuredData.summary.length > 5) {
                             structuredData.summary.pop();
@@ -244,51 +296,129 @@ Keep all points concise and build upon previous analysis if provided.`,
                     if (bullet && structuredData.topic.bullets.length < 3) {
                         structuredData.topic.bullets.push(bullet);
                     }
-                } else if (currentSection === 'explanation' && trimmedLine) {
-                    // explanation을 topic bullets에 추가 (문장 단위로)
-                    const sentences = trimmedLine
-                        .split(/\.\s+/)
-                        .filter(s => s.trim().length > 0)
-                        .map(s => s.trim() + (s.endsWith('.') ? '' : '.'));
-
-                    sentences.forEach(sentence => {
-                        if (structuredData.topic.bullets.length < 3 && !structuredData.topic.bullets.includes(sentence)) {
-                            structuredData.topic.bullets.push(sentence);
+                } else if (currentSection === 'extended-context' && trimmedLine && !trimmedLine.startsWith('**')) {
+                    structuredData.extendedContext += (structuredData.extendedContext ? ' ' : '') + trimmedLine;
+                } else if (currentSection === 'action-items' && (trimmedLine.startsWith('-') || trimmedLine.startsWith('- ['))) {
+                    const actionMatch = trimmedLine.match(/^-\s*\[.\]\s*\*\*(.+?)\*\*\s*\|\s*Assigned to:\s*(.+?)\s*\|\s*Due:\s*(.+)$/);
+                    if (actionMatch) {
+                        structuredData.actionItems.push({
+                            task: actionMatch[1].trim(),
+                            assignedTo: actionMatch[2].trim(),
+                            due: actionMatch[3].trim()
+                        });
+                    } else {
+                        // Fallback for simpler format
+                        const simpleAction = trimmedLine.replace(/^-\s*\[.\]\s*/, '').trim();
+                        if (simpleAction) {
+                            structuredData.actionItems.push({
+                                task: simpleAction,
+                                assignedTo: 'TBD',
+                                due: 'TBD'
+                            });
                         }
-                    });
-                } else if (trimmedLine.match(/^\d+\./) && currentSection === 'questions') {
+                    }
+                } else if (currentSection === 'decisions' && trimmedLine.startsWith('-')) {
+                    const decisionMatch = trimmedLine.match(/^-\s*\*\*(.+?):\*\*\s*(.+)$/);
+                    if (decisionMatch) {
+                        structuredData.decisions.push({
+                            title: decisionMatch[1].trim(),
+                            description: decisionMatch[2].trim()
+                        });
+                    } else {
+                        const decision = trimmedLine.substring(1).trim();
+                        if (decision) {
+                            structuredData.decisions.push({
+                                title: 'Decision',
+                                description: decision
+                            });
+                        }
+                    }
+                } else if (currentSection === 'quiz') {
+                    if (trimmedLine.match(/^\d+\.\s*\*\*Question\*\*/)) {
+                        // New quiz question
+                        const questionText = trimmedLine.replace(/^\d+\.\s*\*\*Question\*\*:\s*/, '').trim();
+                        currentQuizQuestion = {
+                            question: questionText,
+                            options: [],
+                            answer: ''
+                        };
+                        structuredData.quiz.push(currentQuizQuestion);
+                    } else if (currentQuizQuestion && trimmedLine.match(/^\s*-\s*[a-d]\)/)) {
+                        // Quiz option
+                        const option = trimmedLine.replace(/^\s*-\s*/, '').trim();
+                        currentQuizQuestion.options.push(option);
+                    } else if (currentQuizQuestion && trimmedLine.startsWith('*Answer:')) {
+                        // Quiz answer
+                        currentQuizQuestion.answer = trimmedLine.replace(/^\*Answer:\s*/, '').replace(/\*$/, '').trim();
+                    }
+                } else if (currentSection === 'insights') {
+                    if (trimmedLine.startsWith('- **Background**:')) {
+                        currentInsightType = 'background';
+                        structuredData.insights.background = trimmedLine.replace(/^- \*\*Background\*\*:\s*/, '').trim();
+                    } else if (trimmedLine.startsWith('- **Implications**:')) {
+                        currentInsightType = 'implications';
+                        structuredData.insights.implications = trimmedLine.replace(/^- \*\*Implications\*\*:\s*/, '').trim();
+                    } else if (trimmedLine.startsWith('- **Risks**:')) {
+                        currentInsightType = 'risks';
+                        structuredData.insights.risks = trimmedLine.replace(/^- \*\*Risks\*\*:\s*/, '').trim();
+                    } else if (trimmedLine.startsWith('- **Opportunities**:')) {
+                        currentInsightType = 'opportunities';
+                        structuredData.insights.opportunities = trimmedLine.replace(/^- \*\*Opportunities\*\*:\s*/, '').trim();
+                    }
+                } else if (currentSection === 'unresolved' && trimmedLine.startsWith('-')) {
+                    const item = trimmedLine.substring(1).trim();
+                    if (item) {
+                        structuredData.unresolvedItems.push(item);
+                    }
+                } else if (currentSection === 'follow-up-questions' && trimmedLine.match(/^\d+\./)) {
                     const question = trimmedLine.replace(/^\d+\.\s*/, '').trim();
-                    if (question && question.includes('?')) {
-                        structuredData.actions.push(`❓ ${question}`);
+                    if (question) {
+                        structuredData.followUpQuestions.push(question);
                     }
                 }
             }
 
-            // 기본 액션 추가
-            const defaultActions = ['✨ What should I say next?', '💬 Suggest follow-up questions'];
-            defaultActions.forEach(action => {
-                if (!structuredData.actions.includes(action)) {
-                    structuredData.actions.push(action);
-                }
+            // Build actions array from parsed data
+            structuredData.actions = [];
+
+            // Add action items
+            structuredData.actionItems.slice(0, 3).forEach(item => {
+                structuredData.actions.push(`✅ ${item.task}`);
             });
 
-            // 액션 개수 제한
+            // Add follow-up questions
+            structuredData.followUpQuestions.slice(0, 2).forEach(q => {
+                structuredData.actions.push(`❓ ${q}`);
+            });
+
+            // Add default actions if empty
+            if (structuredData.actions.length === 0) {
+                structuredData.actions.push('✨ What should I say next?', '💬 Suggest follow-up questions');
+            }
+
+            // Limit to 5 actions
             structuredData.actions = structuredData.actions.slice(0, 5);
 
-            // 유효성 검증 및 이전 데이터 병합
+            // Validation and fallback to previous data
             if (structuredData.summary.length === 0 && previousResult) {
-                structuredData.summary = previousResult.summary;
+                structuredData.summary = previousResult.summary || [];
             }
             if (structuredData.topic.bullets.length === 0 && previousResult) {
-                structuredData.topic.bullets = previousResult.topic.bullets;
+                structuredData.topic.bullets = previousResult.topic.bullets || [];
             }
         } catch (error) {
             console.error('❌ Error parsing response text:', error);
-            // 에러 시 이전 결과 반환
             return (
                 previousResult || {
                     summary: [],
                     topic: { header: 'Analysis in progress', bullets: [] },
+                    extendedContext: '',
+                    actionItems: [],
+                    decisions: [],
+                    quiz: [],
+                    insights: { background: '', implications: '', risks: '', opportunities: '' },
+                    unresolvedItems: [],
+                    followUpQuestions: [],
                     actions: ['✨ What should I say next?', '💬 Suggest follow-up questions'],
                     followUps: ['✉️ Draft a follow-up email', '✅ Generate action items', '📝 Show summary'],
                 }

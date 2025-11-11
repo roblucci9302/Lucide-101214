@@ -3,6 +3,8 @@ name: Build & Verify
 on:
   push:
     branches: [ "main" ] # Runs on every push to main branch
+  pull_request:
+    branches: [ "main" ] # Also run on PRs to main
 
 jobs:
   build:
@@ -25,19 +27,12 @@ jobs:
       - name: 🔧 Install esbuild platform binaries
         run: npm install @esbuild/darwin-x64 @esbuild/darwin-arm64
 
-      - name: 🌐 Install and build web (Renderer) part
-        # Move to web directory and run commands
-        working-directory: ./web
-        run: |
-          npm install
-          npm run build
-
-      - name: 🖥️ Build Electron app
-        # Run Electron build script from root directory
-        run: npm run build
+      - name: 🔨 Build all (Renderer + Web)
+        # Compile renderer and web parts without packaging
+        run: npm run build:all
 
       - name: 🚨 Send failure notification to Slack
-        if: failure()
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_CHANNEL: general

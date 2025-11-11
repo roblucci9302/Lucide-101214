@@ -33,6 +33,11 @@ class SQLiteClient {
         return this.db;
     }
 
+    // Alias for backward compatibility - many files call getDatabase()
+    getDatabase() {
+        return this.getDb();
+    }
+
     _validateAndQuoteIdentifier(identifier) {
         if (!/^[a-zA-Z0-9_]+$/.test(identifier)) {
             throw new Error(`Invalid database identifier used: ${identifier}. Only alphanumeric characters and underscores are allowed.`);

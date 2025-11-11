@@ -218,6 +218,56 @@ export class HistoryView extends LitElement {
             color: rgba(255, 255, 255, 0.5);
             font-size: 12px;
         }
+
+        .session-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .session-item:hover .session-actions {
+            opacity: 1;
+        }
+
+        .export-btn {
+            flex: 1;
+            padding: 4px 8px;
+            background: rgba(100, 150, 255, 0.2);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 4px;
+            color: rgba(150, 200, 255, 0.9);
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .export-btn:hover {
+            background: rgba(100, 150, 255, 0.3);
+            border-color: rgba(100, 150, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .export-btn:active {
+            transform: translateY(0);
+        }
+
+        .export-btn.json { border-color: rgba(100, 200, 100, 0.3); background: rgba(100, 200, 100, 0.2); color: rgba(150, 255, 150, 0.9); }
+        .export-btn.md { border-color: rgba(255, 200, 100, 0.3); background: rgba(255, 200, 100, 0.2); color: rgba(255, 220, 150, 0.9); }
+        .export-btn.pdf { border-color: rgba(255, 100, 100, 0.3); background: rgba(255, 100, 100, 0.2); color: rgba(255, 150, 150, 0.9); }
+        .export-btn.docx { border-color: rgba(100, 150, 255, 0.3); background: rgba(100, 150, 255, 0.2); color: rgba(150, 200, 255, 0.9); }
+
+        .export-btn.json:hover { background: rgba(100, 200, 100, 0.3); border-color: rgba(100, 200, 100, 0.5); }
+        .export-btn.md:hover { background: rgba(255, 200, 100, 0.3); border-color: rgba(255, 200, 100, 0.5); }
+        .export-btn.pdf:hover { background: rgba(255, 100, 100, 0.3); border-color: rgba(255, 100, 100, 0.5); }
+        .export-btn.docx:hover { background: rgba(100, 150, 255, 0.3); border-color: rgba(100, 150, 255, 0.5); }
+
+        .exporting {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     `;
 
     static properties = {
@@ -226,7 +276,8 @@ export class HistoryView extends LitElement {
         searchQuery: { type: String, state: true },
         activeFilters: { type: Array, state: true },
         selectedSession: { type: String, state: true },
-        isLoading: { type: Boolean, state: true }
+        isLoading: { type: Boolean, state: true },
+        exportingSession: { type: String, state: true }
     };
 
     constructor() {
@@ -237,6 +288,7 @@ export class HistoryView extends LitElement {
         this.activeFilters = [];
         this.selectedSession = null;
         this.isLoading = true;
+        this.exportingSession = null;
 
         this.loadHistory();
     }
@@ -339,6 +391,56 @@ export class HistoryView extends LitElement {
         return names[profileId] || 'Général';
     }
 
+    async handleExport(sessionId, format, event) {
+        // Prevent session selection when clicking export buttons
+        if (event) {
+            event.stopPropagation();
+        }
+
+        if (!window.api || !window.api.export) {
+            console.error('[HistoryView] Export API not available');
+            alert('La fonctionnalité d\'export n\'est pas disponible');
+            return;
+        }
+
+        this.exportingSession = sessionId;
+
+        try {
+            let result;
+
+            switch (format) {
+                case 'json':
+                    result = await window.api.export.toJSON(sessionId);
+                    break;
+                case 'markdown':
+                    result = await window.api.export.toMarkdown(sessionId);
+                    break;
+                case 'pdf':
+                    result = await window.api.export.toPDF(sessionId);
+                    break;
+                case 'docx':
+                    result = await window.api.export.toDOCX(sessionId);
+                    break;
+                default:
+                    throw new Error(`Format d'export non supporté: ${format}`);
+            }
+
+            if (result && result.success) {
+                console.log(`[HistoryView] Export ${format} successful:`, result.filePath);
+                // Could show a success notification here
+            } else if (result && result.cancelled) {
+                console.log('[HistoryView] Export cancelled by user');
+            } else {
+                throw new Error(result.error || 'Export failed');
+            }
+        } catch (error) {
+            console.error(`[HistoryView] Error exporting to ${format}:`, error);
+            alert(`Erreur lors de l'export: ${error.message}`);
+        } finally {
+            this.exportingSession = null;
+        }
+    }
+
     render() {
         if (this.isLoading) {
             return html`
@@ -393,7 +495,7 @@ export class HistoryView extends LitElement {
                         </div>
                     ` : this.sessions.map(session => html`
                         <div
-                            class="session-item ${this.selectedSession === session.id ? 'active' : ''}"
+                            class="session-item ${this.selectedSession === session.id ? 'active' : ''} ${this.exportingSession === session.id ? 'exporting' : ''}"
                             @click=${() => this.selectSession(session.id)}
                         >
                             <div class="session-title">${session.title || 'Sans titre'}</div>
@@ -415,6 +517,36 @@ export class HistoryView extends LitElement {
                                     `)}
                                 </div>
                             ` : ''}
+                            <div class="session-actions">
+                                <button
+                                    class="export-btn json"
+                                    @click=${(e) => this.handleExport(session.id, 'json', e)}
+                                    title="Export JSON"
+                                >
+                                    📋 JSON
+                                </button>
+                                <button
+                                    class="export-btn md"
+                                    @click=${(e) => this.handleExport(session.id, 'markdown', e)}
+                                    title="Export Markdown"
+                                >
+                                    📝 MD
+                                </button>
+                                <button
+                                    class="export-btn pdf"
+                                    @click=${(e) => this.handleExport(session.id, 'pdf', e)}
+                                    title="Export PDF"
+                                >
+                                    📄 PDF
+                                </button>
+                                <button
+                                    class="export-btn docx"
+                                    @click=${(e) => this.handleExport(session.id, 'docx', e)}
+                                    title="Export DOCX"
+                                >
+                                    📘 DOCX
+                                </button>
+                            </div>
                         </div>
                     `)}
                 </div>

@@ -1,6 +1,7 @@
 const { BrowserWindow } = require('electron');
 const SttService = require('./stt/sttService');
 const SummaryService = require('./summary/summaryService');
+const responseService = require('./response/responseService');
 const authService = require('../common/services/authService');
 const sessionRepository = require('../common/repositories/session');
 const sttRepository = require('./stt/repositories');
@@ -38,6 +39,18 @@ class ListenService {
                 this.sendToRenderer('update-status', status);
             }
         });
+
+        // Response service callbacks (real-time AI suggestions)
+        responseService.setCallbacks({
+            onSuggestionsReady: (suggestions) => {
+                console.log('💬 AI suggestions ready:', suggestions);
+                this.sendToRenderer('ai-response-ready', { suggestions });
+            },
+            onSuggestionsError: (error) => {
+                console.error('❌ AI suggestions error:', error.message);
+                this.sendToRenderer('ai-response-error', { error: error.message });
+            }
+        });
     }
 
     sendToRenderer(channel, data) {
@@ -50,7 +63,8 @@ class ListenService {
     }
 
     initialize() {
-        this.setupIpcHandlers();
+        // IPC handlers are registered in conversationBridge.js
+        // Service callbacks are already set up in constructor via setupServiceCallbacks()
         console.log('[ListenService] Initialized and ready.');
     }
 
@@ -99,16 +113,25 @@ class ListenService {
 
     async handleTranscriptionComplete(speaker, text) {
         console.log(`[ListenService] Transcription complete: ${speaker} - ${text}`);
-        
+
         // Save to database
         await this.saveConversationTurn(speaker, text);
-        
+
         // Add to summary service for analysis
         this.summaryService.addConversationTurn(speaker, text);
+
+        // Add to response service for real-time suggestions
+        responseService.addConversationTurn(speaker, text);
 
         // Sauvegarder la dernière transcription si c'est l'utilisateur qui parle
         if (speaker === 'Me') {
             this.lastTranscription = text;
+
+            // Generate real-time AI response suggestions when user finishes speaking
+            console.log('[ListenService] User finished speaking, generating response suggestions...');
+            responseService.generateSuggestions().catch(error => {
+                console.error('[ListenService] Failed to generate suggestions:', error);
+            });
         }
     }
 
@@ -147,9 +170,10 @@ class ListenService {
 
             // Set session ID for summary service
             this.summaryService.setSessionId(this.currentSessionId);
-            
+
             // Reset conversation history
             this.summaryService.resetConversationHistory();
+            responseService.resetConversationHistory();
 
             console.log('New conversation session started:', this.currentSessionId);
             return true;
@@ -251,6 +275,7 @@ class ListenService {
             // Reset state
             this.currentSessionId = null;
             this.summaryService.resetConversationHistory();
+            responseService.resetConversationHistory();
 
             console.log('Listen service session closed.');
             return { success: true };

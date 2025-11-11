@@ -1,10 +1,13 @@
 /**
  * Conversation Bridge - IPC handlers for agents, history, ask, and listen features
  */
-const { ipcMain } = require('electron');
+const { ipcMain, dialog } = require('electron');
+const path = require('path');
+const os = require('os');
 const authService = require('../../features/common/services/authService');
 const agentProfileService = require('../../features/common/services/agentProfileService');
 const conversationHistoryService = require('../../features/common/services/conversationHistoryService');
+const exportService = require('../../features/common/services/exportService');
 const askService = require('../../features/ask/askService');
 const listenService = require('../../features/listen/listenService');
 
@@ -43,6 +46,123 @@ module.exports = {
         });
         ipcMain.handle('history:generate-title', async (event, sessionId) => {
             return await conversationHistoryService.generateTitleFromContent(sessionId);
+        });
+
+        // Export Features (Phase 5)
+        ipcMain.handle('export:conversation-json', async (event, sessionId) => {
+            try {
+                const session = await conversationHistoryService.getSession(sessionId);
+                if (!session) {
+                    throw new Error('Session not found');
+                }
+
+                const suggestedFilename = exportService.getSuggestedFilename(session, 'json');
+
+                const result = await dialog.showSaveDialog({
+                    title: 'Export Conversation to JSON',
+                    defaultPath: path.join(os.homedir(), 'Downloads', suggestedFilename),
+                    filters: [
+                        { name: 'JSON Files', extensions: ['json'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+
+                if (result.canceled || !result.filePath) {
+                    return { success: false, cancelled: true };
+                }
+
+                return await exportService.exportToJSON(sessionId, result.filePath);
+            } catch (error) {
+                console.error('[ConversationBridge] Error exporting to JSON:', error);
+                return { success: false, error: error.message };
+            }
+        });
+
+        ipcMain.handle('export:conversation-markdown', async (event, sessionId) => {
+            try {
+                const session = await conversationHistoryService.getSession(sessionId);
+                if (!session) {
+                    throw new Error('Session not found');
+                }
+
+                const suggestedFilename = exportService.getSuggestedFilename(session, 'markdown');
+
+                const result = await dialog.showSaveDialog({
+                    title: 'Export Conversation to Markdown',
+                    defaultPath: path.join(os.homedir(), 'Downloads', suggestedFilename),
+                    filters: [
+                        { name: 'Markdown Files', extensions: ['md'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+
+                if (result.canceled || !result.filePath) {
+                    return { success: false, cancelled: true };
+                }
+
+                return await exportService.exportToMarkdown(sessionId, result.filePath);
+            } catch (error) {
+                console.error('[ConversationBridge] Error exporting to Markdown:', error);
+                return { success: false, error: error.message };
+            }
+        });
+
+        ipcMain.handle('export:conversation-pdf', async (event, sessionId) => {
+            try {
+                const session = await conversationHistoryService.getSession(sessionId);
+                if (!session) {
+                    throw new Error('Session not found');
+                }
+
+                const suggestedFilename = exportService.getSuggestedFilename(session, 'pdf');
+
+                const result = await dialog.showSaveDialog({
+                    title: 'Export Conversation to PDF',
+                    defaultPath: path.join(os.homedir(), 'Downloads', suggestedFilename),
+                    filters: [
+                        { name: 'PDF Files', extensions: ['pdf'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+
+                if (result.canceled || !result.filePath) {
+                    return { success: false, cancelled: true };
+                }
+
+                return await exportService.exportToPDF(sessionId, result.filePath);
+            } catch (error) {
+                console.error('[ConversationBridge] Error exporting to PDF:', error);
+                return { success: false, error: error.message };
+            }
+        });
+
+        ipcMain.handle('export:conversation-docx', async (event, sessionId) => {
+            try {
+                const session = await conversationHistoryService.getSession(sessionId);
+                if (!session) {
+                    throw new Error('Session not found');
+                }
+
+                const suggestedFilename = exportService.getSuggestedFilename(session, 'docx');
+
+                const result = await dialog.showSaveDialog({
+                    title: 'Export Conversation to DOCX',
+                    defaultPath: path.join(os.homedir(), 'Downloads', suggestedFilename),
+                    filters: [
+                        { name: 'Word Documents', extensions: ['docx'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+
+                if (result.canceled || !result.filePath) {
+                    return { success: false, cancelled: true };
+                }
+
+                return await exportService.exportToDOCX(sessionId, result.filePath);
+            } catch (error) {
+                console.error('[ConversationBridge] Error exporting to DOCX:', error);
+                return { success: false, error: error.message };
+            }
         });
 
         // Ask Feature

@@ -49,6 +49,16 @@
     font-size: var(--mobile-text-base);
   }
 
+  /* Theme toggle plus compact sur mobile */
+  theme-toggle {
+    transform: scale(0.9);
+  }
+
+  /* Header controls spacing réduit */
+  .header-controls {
+    gap: 4px !important;
+  }
+
   /* Boutons full-width sur mobile */
   button[class*="primary"],
   button[class*="action"] {

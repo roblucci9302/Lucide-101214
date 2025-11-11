@@ -63,7 +63,8 @@ class ListenService {
     }
 
     initialize() {
-        this.setupIpcHandlers();
+        // IPC handlers are registered in conversationBridge.js
+        // Service callbacks are already set up in constructor via setupServiceCallbacks()
         console.log('[ListenService] Initialized and ready.');
     }
 

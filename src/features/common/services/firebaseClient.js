@@ -59,13 +59,13 @@ function createElectronStorePersistence(storeName = 'firebase-auth-session') {
 }
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAwHfSOD7s2-z5TCMyx-_VzwYT-a0m9hKo",
-    authDomain: "lucide-dream.firebaseapp.com",
-    projectId: "lucide-dream",
-    storageBucket: "lucide-dream.firebasestorage.app",
-    messagingSenderId: "789779677981",
-    appId: "1:789779677981:web:5161ec061a3569289817f4",
-    measurementId: "G-06S57JVR7T"
+    apiKey: process.env.FIREBASE_API_KEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID
 };
 
 let firebaseApp = null;

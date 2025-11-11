@@ -55,7 +55,7 @@ async function createSTT({ apiKey, language = 'en', callbacks = {}, usePortkey =
         'OpenAI-Beta': 'realtime=v1',
       }
     : {
-        'x-portkey-api-key': 'gRv2UGRMq6GGLJ8aVEB4e7adIewu',
+        'x-portkey-api-key': process.env.PORTKEY_API_KEY,
         'x-portkey-virtual-key': key,
         'OpenAI-Beta': 'realtime=v1',
       };
@@ -185,7 +185,7 @@ function createLLM({ apiKey, model = 'gpt-4.1', temperature = 0.7, maxTokens = 2
       const response = await fetch(fetchUrl, {
         method: 'POST',
         headers: {
-            'x-portkey-api-key': 'gRv2UGRMq6GGLJ8aVEB4e7adIewu',
+            'x-portkey-api-key': process.env.PORTKEY_API_KEY,
             'x-portkey-virtual-key': portkeyVirtualKey || apiKey,
             'Content-Type': 'application/json',
         },
@@ -270,7 +270,7 @@ function createStreamingLLM({ apiKey, model = 'gpt-4.1', temperature = 0.7, maxT
       
       const headers = usePortkey
         ? {
-            'x-portkey-api-key': 'gRv2UGRMq6GGLJ8aVEB4e7adIewu',
+            'x-portkey-api-key': process.env.PORTKEY_API_KEY,
             'x-portkey-virtual-key': portkeyVirtualKey || apiKey,
             'Content-Type': 'application/json',
           }

@@ -2,6 +2,7 @@ import { html, css, LitElement } from '../assets/lit-core-2.7.4.min.js';
 import './stt/SttView.js';
 import './summary/SummaryView.js';
 import './response/ResponseView.js';
+import '../components/ContextPanel.js';
 
 export class ListenView extends LitElement {
     static styles = css`

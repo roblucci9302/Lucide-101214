@@ -82,7 +82,9 @@ app.whenReady().then(async () => {
 
     // Initialize core services
     initializeFirebase();
-    
+
+    let initializationSuccessful = true;
+
     try {
         await databaseInitializer.initialize();
         console.log('>>> [index.js] Database initialized successfully');
@@ -132,14 +134,25 @@ app.whenReady().then(async () => {
             }
         }, 2000);
 
-        createWindows();
-
     } catch (err) {
-        console.error('>>> [index.js] Database initialization failed - some features may not work', err);
-        dialog.showErrorBox(
-            'Application Error',
-            'A critical error occurred during startup. Some features might be disabled. Please restart the application.'
-        );
+        console.error('>>> [index.js] Initialization failed - starting in degraded mode', err);
+        initializationSuccessful = false;
+    }
+
+    // ALWAYS create windows, even if initialization failed
+    createWindows();
+
+    // Show warning dialog AFTER windows are created if there were errors
+    if (!initializationSuccessful) {
+        setTimeout(() => {
+            dialog.showMessageBox({
+                type: 'warning',
+                title: 'Initialization Warning',
+                message: 'Some services failed to initialize. The application is running in degraded mode.',
+                detail: 'Core features should work, but some advanced features may be unavailable.',
+                buttons: ['OK']
+            });
+        }, 1000);
     }
 
     // initAutoUpdater should be called after auth is initialized

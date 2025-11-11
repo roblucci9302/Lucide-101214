@@ -55,8 +55,25 @@ class AuthService {
     initialize() {
         if (this.isInitialized) return this.initializationPromise;
 
-        this.initializationPromise = new Promise((resolve) => {
+        this.initializationPromise = new Promise(async (resolve) => {
             const auth = getFirebaseAuth();
+
+            // Handle degraded mode when Firebase is not available
+            if (!auth) {
+                console.log('[AuthService] Firebase not available - running in local mode');
+                this.currentUser = null;
+                this.currentUserId = 'default_user';
+                this.currentUserMode = 'local';
+                this.isInitialized = true;
+
+                // Initialize agent profile for default user
+                await agentProfileService.initialize('default_user');
+
+                this.broadcastUserState();
+                resolve();
+                return;
+            }
+
             // Store unsubscribe function for cleanup
             this.authUnsubscribe = onAuthStateChanged(auth, async (user) => {
                 const previousUser = this.currentUser;
@@ -151,6 +168,9 @@ class AuthService {
 
     async signInWithCustomToken(token) {
         const auth = getFirebaseAuth();
+        if (!auth) {
+            throw new Error('Firebase Auth not available - cannot sign in');
+        }
         try {
             const userCredential = await signInWithCustomToken(auth, token);
             console.log(`[AuthService] Successfully signed in with custom token for user:`, userCredential.user.uid);
@@ -163,6 +183,10 @@ class AuthService {
 
     async signOut() {
         const auth = getFirebaseAuth();
+        if (!auth) {
+            console.warn('[AuthService] Firebase Auth not available - cannot sign out');
+            return;
+        }
         try {
             // End all active sessions for the current user BEFORE signing out.
             await sessionRepository.endAllActiveSessions();

@@ -114,14 +114,16 @@ function initializeFirebase() {
 
 function getFirebaseAuth() {
     if (!firebaseAuth) {
-        throw new Error("Firebase Auth has not been initialized. Call initializeFirebase() first.");
+        console.warn('[FirebaseClient] Firebase Auth not initialized - returning null for degraded mode');
+        return null;
     }
     return firebaseAuth;
 }
 
 function getFirestoreInstance() {
     if (!firestoreInstance) {
-        throw new Error("Firestore has not been initialized. Call initializeFirebase() first.");
+        console.warn('[FirebaseClient] Firestore not initialized - returning null for degraded mode');
+        return null;
     }
     return firestoreInstance;
 }

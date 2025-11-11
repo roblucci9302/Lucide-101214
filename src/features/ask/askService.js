@@ -23,6 +23,7 @@ const execFile = util.promisify(require('child_process').execFile);
 const { desktopCapturer } = require('electron');
 const modelStateService = require('../common/services/modelStateService');
 const agentProfileService = require('../common/services/agentProfileService');
+const agentRouterService = require('../common/services/agentRouterService');
 const conversationHistoryService = require('../common/services/conversationHistoryService');
 const documentService = require('../common/services/documentService');
 const ragService = require('../common/services/ragService');
@@ -247,7 +248,44 @@ class AskService {
             await askRepository.addAiMessage({ sessionId, role: 'user', content: userPrompt.trim() });
             console.log(`[AskService] DB: Saved user prompt to session ${sessionId}`);
 
-            // Get the current active agent profile
+            // PHASE 1: AGENT ROUTER - Intelligent routing to specialized agents
+            // Auto-detect and switch to the most appropriate agent based on question
+            const userId = sessionRepository.getCurrentUserId ? await sessionRepository.getCurrentUserId() : null;
+
+            if (userId && userPrompt && userPrompt.trim().length > 0) {
+                try {
+                    const routing = await agentRouterService.routeQuestion(userPrompt, userId);
+                    const currentProfile = agentProfileService.getCurrentProfile();
+
+                    // Auto-switch if confidence is high and different from current profile
+                    if (routing.confidence > 0.75 && routing.agent !== currentProfile) {
+                        console.log(`[AskService] 🔄 Auto-switching agent: ${currentProfile} → ${routing.agent} (confidence: ${routing.confidence.toFixed(2)})`);
+
+                        await agentProfileService.setActiveProfile(userId, routing.agent);
+
+                        // Notify UI of agent switch
+                        const askWindow = getWindowPool()?.get('ask');
+                        if (askWindow && !askWindow.isDestroyed()) {
+                            const profileInfo = agentProfileService.getProfileById(routing.agent);
+                            askWindow.webContents.send('agent-switched', {
+                                agent: routing.agent,
+                                agentName: profileInfo?.name || routing.agent,
+                                agentIcon: profileInfo?.icon || '🤖',
+                                confidence: routing.confidence,
+                                reason: routing.reason,
+                                previousAgent: currentProfile
+                            });
+                        }
+                    } else {
+                        console.log(`[AskService] ✓ Agent routing confirmed: ${routing.agent} (confidence: ${routing.confidence.toFixed(2)})`);
+                    }
+                } catch (routingError) {
+                    console.warn('[AskService] Agent routing failed, using current profile:', routingError);
+                    // Continue with current profile if routing fails
+                }
+            }
+
+            // Get the current active agent profile (potentially updated by router)
             const activeProfile = agentProfileService.getCurrentProfile();
             console.log(`[AskService] Using agent profile: ${activeProfile}`);
 

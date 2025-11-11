@@ -375,25 +375,57 @@ class DocumentService {
     /**
      * Extract text from PDF
      * @private
-     * Note: Placeholder for PDF extraction - requires pdf-parse library
+     * Uses pdf-parse library to extract text content from PDF files
      */
     async _extractPDF(source) {
-        // TODO: Implement with pdf-parse
-        // For now, return a placeholder
-        console.warn('[DocumentService] PDF extraction not yet implemented');
-        return '[PDF content extraction requires pdf-parse library]';
+        try {
+            const pdfParse = require('pdf-parse');
+
+            let dataBuffer;
+            if (Buffer.isBuffer(source)) {
+                dataBuffer = source;
+            } else {
+                dataBuffer = await fs.readFile(source);
+            }
+
+            const data = await pdfParse(dataBuffer);
+
+            console.log(`[DocumentService] PDF extracted: ${data.numpages} pages, ${data.text.length} characters`);
+
+            return data.text;
+        } catch (error) {
+            console.error('[DocumentService] Error extracting PDF:', error);
+            throw new Error(`Failed to extract PDF content: ${error.message}`);
+        }
     }
 
     /**
      * Extract text from DOCX
      * @private
-     * Note: Placeholder for DOCX extraction - requires mammoth library
+     * Uses mammoth library to extract text content from DOCX files
      */
     async _extractDOCX(source) {
-        // TODO: Implement with mammoth
-        // For now, return a placeholder
-        console.warn('[DocumentService] DOCX extraction not yet implemented');
-        return '[DOCX content extraction requires mammoth library]';
+        try {
+            const mammoth = require('mammoth');
+
+            let result;
+            if (Buffer.isBuffer(source)) {
+                result = await mammoth.extractRawText({ buffer: source });
+            } else {
+                result = await mammoth.extractRawText({ path: source });
+            }
+
+            console.log(`[DocumentService] DOCX extracted: ${result.value.length} characters`);
+
+            if (result.messages && result.messages.length > 0) {
+                console.warn('[DocumentService] DOCX extraction warnings:', result.messages);
+            }
+
+            return result.value;
+        } catch (error) {
+            console.error('[DocumentService] Error extracting DOCX:', error);
+            throw new Error(`Failed to extract DOCX content: ${error.message}`);
+        }
     }
 
     /**

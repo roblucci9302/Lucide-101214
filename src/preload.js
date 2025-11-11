@@ -297,6 +297,14 @@ contextBridge.exposeInMainWorld('api', {
     uploadDocument: () => ipcRenderer.invoke('documents:upload')
   },
 
+  // Phase 5: Export - Conversation Export
+  export: {
+    toJSON: (sessionId) => ipcRenderer.invoke('export:conversation-json', sessionId),
+    toMarkdown: (sessionId) => ipcRenderer.invoke('export:conversation-markdown', sessionId),
+    toPDF: (sessionId) => ipcRenderer.invoke('export:conversation-pdf', sessionId),
+    toDOCX: (sessionId) => ipcRenderer.invoke('export:conversation-docx', sessionId)
+  },
+
   // Phase 4: RAG (Retrieval Augmented Generation)
   rag: {
     retrieveContext: (query, options) => ipcRenderer.invoke('rag:retrieve-context', query, options),

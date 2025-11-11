@@ -1,10 +1,26 @@
 import { html, css, LitElement } from '../assets/lit-core-2.7.4.min.js';
+import { AudioVisualizer } from '../components/AudioVisualizer.js';
 
 export class MainHeader extends LitElement {
+    // États enrichis du header
+    static STATES = {
+        IDLE: 'idle',           // Repos
+        LISTENING: 'listening', // En écoute (avec viz audio)
+        PROCESSING: 'processing', // Traitement en cours
+        RESPONDING: 'responding', // Génération réponse
+        ERROR: 'error',         // Erreur
+        SUCCESS: 'success'      // Succès momentané
+    };
+
     static properties = {
         isTogglingSession: { type: Boolean, state: true },
         shortcuts: { type: Object, state: true },
         listenSessionStatus: { type: String, state: true },
+        // Nouveaux états
+        currentState: { type: String, state: true },
+        showAudioVisualizer: { type: Boolean, state: true },
+        docCount: { type: Number, state: true },
+        historyCount: { type: Number, state: true },
     };
 
     static styles = css`
@@ -300,6 +316,108 @@ export class MainHeader extends LitElement {
             width: 16px;
             height: 16px;
         }
+
+        /* ────────────────[ AUDIO VISUALIZER ]─────────────── */
+        audio-visualizer {
+            position: absolute;
+            bottom: -2px;
+            left: 12px;
+            right: 12px;
+            height: 20px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--timing-fast) var(--easing-standard);
+        }
+
+        audio-visualizer[active] {
+            opacity: 1;
+        }
+
+        /* ────────────────[ BADGES ]─────────────── */
+        .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .badge--info {
+            background: var(--state-info);
+        }
+
+        .badge--success {
+            background: var(--state-success);
+        }
+
+        .badge--warning {
+            background: var(--state-warning);
+        }
+
+        .badge--error {
+            background: var(--state-error);
+        }
+
+        /* ────────────────[ ÉTATS VISUELS ]─────────────── */
+        .header-actions.active {
+            position: relative;
+        }
+
+        /* Underline pour état actif */
+        .header-actions.active::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            background: var(--state-info);
+            border-radius: 1px;
+            box-shadow: 0 0 4px var(--state-info-glow);
+        }
+
+        /* Pulse subtil pour processing */
+        .header-actions.processing {
+            animation: pulse-subtle 2s infinite var(--easing-standard);
+        }
+
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Glow success */
+        .listen-button.success::before {
+            background: var(--state-success);
+            box-shadow: 0 0 12px var(--state-success-glow);
+        }
+
+        /* Shake error */
+        .listen-button.error {
+            animation: shake-subtle 0.3s var(--easing-standard);
+        }
+
+        @keyframes shake-subtle {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* Position relative pour badges */
+        .header-actions {
+            position: relative;
+        }
+
         /* ────────────────[ GLASS BYPASS ]─────────────── */
         :host-context(body.has-glass) .header,
         :host-context(body.has-glass) .listen-button,
@@ -366,6 +484,13 @@ export class MainHeader extends LitElement {
         this.handleMouseUp = this.handleMouseUp.bind(this);
         this.dragState = null;
         this.wasJustDragged = false;
+
+        // Nouveaux états
+        this.currentState = MainHeader.STATES.IDLE;
+        this.showAudioVisualizer = false;
+        this.docCount = 0;
+        this.historyCount = 0;
+        this.audioVisualizerRef = null;
     }
 
     _getListenButtonText(status) {
@@ -486,15 +611,39 @@ export class MainHeader extends LitElement {
 
             this._sessionStateTextListener = (event, { success }) => {
                 if (success) {
-                    this.listenSessionStatus = ({
+                    const newStatus = ({
                         beforeSession: 'inSession',
                         inSession: 'afterSession',
                         afterSession: 'beforeSession',
                     })[this.listenSessionStatus] || 'beforeSession';
+
+                    this.listenSessionStatus = newStatus;
+
+                    // Gérer le visualiseur audio
+                    if (newStatus === 'inSession') {
+                        this.showAudioVisualizer = true;
+                        this.currentState = MainHeader.STATES.LISTENING;
+                    } else if (newStatus === 'afterSession') {
+                        this.showAudioVisualizer = false;
+                        this.currentState = MainHeader.STATES.SUCCESS;
+                        // Reset to IDLE after 2 seconds
+                        setTimeout(() => {
+                            this.currentState = MainHeader.STATES.IDLE;
+                        }, 2000);
+                    } else {
+                        this.showAudioVisualizer = false;
+                        this.currentState = MainHeader.STATES.IDLE;
+                    }
                 } else {
                     this.listenSessionStatus = 'beforeSession';
+                    this.showAudioVisualizer = false;
+                    this.currentState = MainHeader.STATES.ERROR;
+                    // Reset to IDLE after animation
+                    setTimeout(() => {
+                        this.currentState = MainHeader.STATES.IDLE;
+                    }, 500);
                 }
-                this.isTogglingSession = false; // ✨ 로딩 상태만 해제
+                this.isTogglingSession = false;
             };
             window.api.mainHeader.onListenChangeSessionResult(this._sessionStateTextListener);
 
@@ -610,6 +759,24 @@ export class MainHeader extends LitElement {
         `)}`;
     }
 
+    /**
+     * Rendu d'un badge contextuel
+     * @param {number} count - Nombre à afficher
+     * @param {string} type - Type de badge (info, success, warning, error)
+     * @param {string} label - Label pour l'attribut title
+     */
+    renderBadge(count, type = 'info', label = '') {
+        if (!count || count <= 0) return '';
+
+        return html`
+            <span
+                class="badge badge--${type}"
+                title="${label || `${count} élément(s)`}">
+                ${count}
+            </span>
+        `;
+    }
+
     render() {
         const listenButtonText = this._getListenButtonText(this.listenSessionStatus);
     
@@ -674,7 +841,7 @@ export class MainHeader extends LitElement {
                     </div>
                 </div>
 
-                <button 
+                <button
                     class="settings-button"
                     @mouseenter=${(e) => this.showSettingsWindow(e.currentTarget)}
                     @mouseleave=${() => this.hideSettingsWindow()}
@@ -685,6 +852,12 @@ export class MainHeader extends LitElement {
                         </svg>
                     </div>
                 </button>
+
+                <!-- Audio Visualizer (shown when listening) -->
+                <audio-visualizer
+                    ?active="${this.showAudioVisualizer}"
+                    ${this.showAudioVisualizer ? 'active' : ''}>
+                </audio-visualizer>
             </div>
         `;
     }

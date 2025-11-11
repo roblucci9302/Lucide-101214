@@ -191,11 +191,22 @@ contextBridge.exposeInMainWorld('api', {
   summaryView: {
     // Message Handling
     sendQuestionFromSummary: (text) => ipcRenderer.invoke('ask:sendQuestionFromSummary', text),
-    
+
     // Listeners
     onSummaryUpdate: (callback) => ipcRenderer.on('summary-update', callback),
     removeOnSummaryUpdate: (callback) => ipcRenderer.removeListener('summary-update', callback),
     removeAllSummaryUpdateListeners: () => ipcRenderer.removeAllListeners('summary-update')
+  },
+
+  // src/ui/listen/response/ResponseView.js
+  responseView: {
+    // Listeners for AI response suggestions
+    onAiResponseReady: (callback) => ipcRenderer.on('ai-response-ready', callback),
+    removeOnAiResponseReady: (callback) => ipcRenderer.removeListener('ai-response-ready', callback),
+    onAiResponseError: (callback) => ipcRenderer.on('ai-response-error', callback),
+    removeOnAiResponseError: (callback) => ipcRenderer.removeListener('ai-response-error', callback),
+    onSessionStateChanged: (callback) => ipcRenderer.on('session-state-changed', callback),
+    removeOnSessionStateChanged: (callback) => ipcRenderer.removeListener('session-state-changed', callback)
   },
 
   // src/ui/settings/SettingsView.js

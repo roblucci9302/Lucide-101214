@@ -1,6 +1,7 @@
 import { html, css, LitElement } from '../assets/lit-core-2.7.4.min.js';
 import './stt/SttView.js';
 import './summary/SummaryView.js';
+import './response/ResponseView.js';
 
 export class ListenView extends LitElement {
     static styles = css`
@@ -518,9 +519,14 @@ export class ListenView extends LitElement {
         this.updateComplete
             .then(() => {
                 const topBar = this.shadowRoot.querySelector('.top-bar');
-                const activeContent = this.viewMode === 'transcript'
-                    ? this.shadowRoot.querySelector('stt-view')
-                    : this.shadowRoot.querySelector('summary-view');
+                let activeContent;
+                if (this.viewMode === 'transcript') {
+                    activeContent = this.shadowRoot.querySelector('stt-view');
+                } else if (this.viewMode === 'suggestions') {
+                    activeContent = this.shadowRoot.querySelector('response-view');
+                } else {
+                    activeContent = this.shadowRoot.querySelector('summary-view');
+                }
 
                 if (!topBar || !activeContent) return;
 
@@ -544,7 +550,14 @@ export class ListenView extends LitElement {
     }
 
     toggleViewMode() {
-        this.viewMode = this.viewMode === 'insights' ? 'transcript' : 'insights';
+        // Cycle through 3 modes: insights → transcript → suggestions → insights
+        if (this.viewMode === 'insights') {
+            this.viewMode = 'transcript';
+        } else if (this.viewMode === 'transcript') {
+            this.viewMode = 'suggestions';
+        } else {
+            this.viewMode = 'insights';
+        }
         this.requestUpdate();
     }
 
@@ -627,9 +640,13 @@ export class ListenView extends LitElement {
         const displayText = this.isHovering
             ? this.viewMode === 'transcript'
                 ? 'Copier la transcription'
+                : this.viewMode === 'suggestions'
+                ? 'Suggestions IA'
                 : 'Copier l\'analyse Lucide'
             : this.viewMode === 'insights'
             ? `Analyses en direct`
+            : this.viewMode === 'suggestions'
+            ? `Suggestions IA`
             : `Lucide écoute ${this.elapsedTime}`;
 
         return html`
@@ -673,15 +690,19 @@ export class ListenView extends LitElement {
                     </div>
                 </div>
 
-                <stt-view 
+                <stt-view
                     .isVisible=${this.viewMode === 'transcript'}
                     @stt-messages-updated=${this.handleSttMessagesUpdated}
                 ></stt-view>
 
-                <summary-view 
+                <summary-view
                     .isVisible=${this.viewMode === 'insights'}
                     .hasCompletedRecording=${this.hasCompletedRecording}
                 ></summary-view>
+
+                <response-view
+                    .visible=${this.viewMode === 'suggestions'}
+                ></response-view>
             </div>
         `;
     }

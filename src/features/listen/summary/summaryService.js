@@ -4,6 +4,7 @@ const { createLLM } = require('../../common/ai/factory');
 const sessionRepository = require('../../common/repositories/session');
 const summaryRepository = require('./repositories');
 const modelStateService = require('../../common/services/modelStateService');
+const tokenTrackingService = require('../../common/services/tokenTrackingService');
 
 class SummaryService {
     constructor() {
@@ -174,6 +175,15 @@ Be thorough, specific, and actionable. Build upon previous analysis if provided.
             });
 
             const completion = await llm.chat(messages);
+
+            // Track token usage and cost
+            tokenTrackingService.trackUsage({
+                provider: modelInfo.provider,
+                model: modelInfo.model,
+                response: completion,
+                sessionId: this.currentSessionId,
+                feature: 'summary'
+            });
 
             const responseText = completion.content;
             console.log(`✅ Analysis response received: ${responseText}`);

@@ -8,6 +8,7 @@
 const { getSystemPrompt } = require('../../common/prompts/promptBuilder.js');
 const { createLLM } = require('../../common/ai/factory');
 const modelStateService = require('../../common/services/modelStateService');
+const tokenTrackingService = require('../../common/services/tokenTrackingService');
 
 class ResponseService {
     constructor() {
@@ -157,6 +158,15 @@ ONLY respond with the suggestions in the format above. No other commentary.`
 
             const completion = await llm.chat(messages);
             const responseText = completion.content;
+
+            // Track token usage and cost
+            tokenTrackingService.trackUsage({
+                provider: modelInfo.provider,
+                model: modelInfo.model,
+                response: completion,
+                sessionId: null, // Response service doesn't have session ID
+                feature: 'response'
+            });
 
             console.log('[ResponseService] Suggestions received');
 

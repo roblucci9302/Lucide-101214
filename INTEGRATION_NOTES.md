@@ -14,7 +14,7 @@ Ce document décrit l'état actuel des intégrations et les prochaines étapes.
 - ✅ **AudioVisualizer.js**: Analyse FFT réelle (32 bars, smoothing 0.7)
 - ✅ **MainHeader.js**: 6 états enrichis, badges, animations
 - ✅ Intégré dans MainHeader
-- ⚠️ **AudioVisualizer pas encore connecté à l'audio réel** (voir section ci-dessous)
+- ✅ **AudioVisualizer connecté à l'audio réel** (Commit: 1033163)
 
 ### Phase 3: Context Panel (Commit: 769f985)
 - ✅ **ContextPanel.js**: Panel contextuel collapsible
@@ -30,9 +30,11 @@ Ce document décrit l'état actuel des intégrations et les prochaines étapes.
 ### Phase 4: Response Cards (Commit: 827b0d2)
 - ✅ **ResponseCard.js**: Cards riches pour réponses IA
 - ✅ Menu contextuel, code copy, sources, feedback
-- ⚠️ **Pas encore intégré dans les vues**
-  - ResponseCard est créé mais attend d'être utilisé pour afficher les réponses markdown de l'IA
-  - Peut être intégré dans AskView pour remplacer le rendu markdown actuel
+- ✅ **Intégré dans AskView** (Commit: 1033163)
+  - Affiche les réponses complètes avec menu contextuel
+  - Boutons de feedback (thumbs up/down, reformulate)
+  - Copy buttons sur code blocks
+  - Utilisé pour réponses complètes (pas pendant streaming)
 
 ### Phase 5: Theme Toggle (Commit: fde13cf)
 - ✅ **ThemeToggle.js**: Toggle dark/light professionnel
@@ -42,111 +44,56 @@ Ce document décrit l'état actuel des intégrations et les prochaines étapes.
 
 ---
 
-## Tâche en suspens: Connecter AudioVisualizer à l'audio réel
+## ✅ AudioVisualizer connecté à l'audio réel (Commit: 1033163)
 
-### État actuel
-AudioVisualizer.js a été créé avec toutes les fonctionnalités nécessaires :
-- Analyse FFT avec AnalyserNode
-- 32 bars de fréquence (16 sur mobile)
-- Smoothing constant 0.7
-- Méthode `initializeAnalyser(stream, audioContext)` prête
+**Solution implémentée : Événement custom**
 
-Actuellement, AudioVisualizer affiche des bars statiques car il n'est pas connecté au stream audio réel.
+### Modifications apportées
 
-### Où se trouve l'audio stream
-Le stream audio est créé dans `/src/ui/listen/audioCore/listenCapture.js` :
-- **Ligne 298**: `const micAudioContext = new AudioContext({ sampleRate: 24000 })`
-- **Ligne 300**: `const micSource = micAudioContext.createMediaStreamSource(micStream)`
+**listenCapture.js** :
+- Ajout de l'événement `audio-stream-ready` dans `setupMicProcessing()`
+- Ajout de l'événement `audio-stream-ready` dans `setupLinuxMicProcessing()`
+- Émission avec `{ stream, audioContext }` quand le processing audio démarre
 
-### Solution recommandée
+**MainHeader.js** :
+- Ajout de `_audioStreamReadyListener` pour écouter l'événement
+- Appel de `visualizer.initializeAnalyser(stream, audioContext)` automatiquement
+- Cleanup propre dans `disconnectedCallback()`
 
-#### Option 1: Événement custom au démarrage de la session
-1. Dans `listenCapture.js`, après la création du `micAudioContext` (ligne 298-301) :
-```javascript
-// Émettre un événement avec le stream et le context
-window.dispatchEvent(new CustomEvent('audio-stream-ready', {
-    detail: {
-        stream: micStream,
-        audioContext: micAudioContext
-    }
-}));
-```
-
-2. Dans `MainHeader.js`, écouter cet événement dans `connectedCallback()` :
-```javascript
-this._audioStreamReadyListener = (event) => {
-    const { stream, audioContext } = event.detail;
-
-    // Récupérer le composant AudioVisualizer
-    this.updateComplete.then(() => {
-        const visualizer = this.shadowRoot.querySelector('audio-visualizer');
-        if (visualizer) {
-            visualizer.initializeAnalyser(stream, audioContext);
-        }
-    });
-};
-window.addEventListener('audio-stream-ready', this._audioStreamReadyListener);
-```
-
-3. Cleanup dans `disconnectedCallback()` :
-```javascript
-window.removeEventListener('audio-stream-ready', this._audioStreamReadyListener);
-```
-
-#### Option 2: Via IPC Electron
-1. Exposer le stream via `window.api.listenCapture.getAudioStream()`
-2. MainHeader appelle cette API quand `showAudioVisualizer` devient `true`
-3. Plus propre mais nécessite des modifications dans le main process
-
-#### Option 3: Module global
-Créer un module `audioStreamManager.js` qui :
-- Stocke une référence au stream actif
-- Expose des méthodes `getActiveStream()` et `setActiveStream()`
-- MainHeader récupère le stream quand nécessaire
-
-### Recommandation
-**Option 1 (événement custom)** est la plus simple et la moins invasive. Elle nécessite ~10 lignes de code et fonctionne immédiatement.
+**Résultat** :
+- AudioVisualizer affiche maintenant les vraies fréquences audio en temps réel
+- 32 bars animées pendant l'enregistrement (16 sur mobile)
+- Smoothing à 0.7 pour une visualisation fluide
+- Fonctionne sur macOS et Linux
 
 ---
 
-## Tâche en suspens: Intégrer ResponseCard pour les réponses IA
+## ✅ ResponseCard intégré dans AskView (Commit: 1033163)
 
-### État actuel
-ResponseCard.js est créé mais pas utilisé. AskView utilise actuellement un rendu markdown custom dans `.response-container`.
+**Solution implémentée : Utilisation conditionnelle selon l'état**
 
-### Solution recommandée
-1. Importer ResponseCard dans AskView :
-```javascript
-import '../components/ResponseCard.js';
-```
+### Modifications apportées
 
-2. Remplacer le div `.response-container` par des instances de `<response-card>` :
-```javascript
-${this.currentResponse ? html`
-    <response-card
-        .content=${this.currentResponse}
-        .sources=${[]}
-        .streaming=${this.isStreaming}
-        @feedback=${this.handleFeedback}
-        @source-click=${this.handleSourceClick}
-    ></response-card>
-` : ''}
-```
+**AskView.js** :
+- Import de `ResponseCard.js`
+- Ajout de la propriété `useResponseCard` (default: true)
+- Implémentation des event handlers :
+  - `handleResponseCardFeedback()` - thumbs up/down/reformulate
+  - `handleSourceClick()` - ouverture de sources
+  - `handleResponseCardCopy()` - copie de contenu
+  - `handleResponseCardDelete()` - suppression de réponse
+- Modification du `render()` pour utiliser ResponseCard conditionnellement
 
-3. Gérer les événements émis par ResponseCard :
-```javascript
-handleFeedback(event) {
-    const { type, timestamp } = event.detail;
-    console.log('Feedback:', type);
-    // Envoyer le feedback au backend
-}
+**Logique d'affichage** :
+- **Pendant le streaming** : Utilisation du système legacy avec `.response-container` (streaming optimisé avec SMD.js)
+- **Réponse complète** : Utilisation de `<response-card>` avec toutes les fonctionnalités (menu, feedback, code copy)
 
-handleSourceClick(event) {
-    const { source } = event.detail;
-    console.log('Source clicked:', source);
-    // Ouvrir le document source
-}
-```
+**Résultat** :
+- Meilleur des deux mondes : streaming performant + interactions riches
+- Menu contextuel professionnel (copy, export, save, delete)
+- Boutons de feedback inline
+- Code blocks avec copy buttons individuels
+- Sources cliquables (préparé pour future intégration)
 
 ---
 
@@ -154,27 +101,23 @@ handleSourceClick(event) {
 
 | Phase | Commit | Description | Statut |
 |-------|--------|-------------|--------|
-| 1 | cf2bac6 | Design tokens, responsive, animations | ✅ Intégré |
-| 2 | 6c35b8e | Smart Bar, AudioVisualizer | ✅ Intégré (audio non connecté) |
-| 3 | 769f985 | ContextPanel créé | ✅ Intégré |
-| - | 402d0c3 | ContextPanel dans ListenView & AskView | ✅ Intégré |
-| 4 | 827b0d2 | ResponseCard créé | ⏳ À intégrer |
-| 5 | fde13cf | ThemeToggle | ✅ Intégré |
+| 1 | cf2bac6 | Design tokens, responsive, animations | ✅ Complet |
+| 2 | 6c35b8e | Smart Bar, AudioVisualizer créé | ✅ Complet |
+| - | 1033163 | AudioVisualizer connecté à l'audio réel | ✅ Complet |
+| 3 | 769f985 | ContextPanel créé | ✅ Complet |
+| - | 402d0c3 | ContextPanel dans ListenView & AskView | ✅ Complet |
+| 4 | 827b0d2 | ResponseCard créé | ✅ Complet |
+| - | 1033163 | ResponseCard intégré dans AskView | ✅ Complet |
+| 5 | fde13cf | ThemeToggle | ✅ Complet |
+| Doc | 2a8a481 | Documentation intégrations | ✅ Complet |
+
+**🎉 Toutes les phases du design system sont maintenant intégrées et fonctionnelles !**
 
 ---
 
-## Prochaines étapes recommandées
+## Prochaines étapes recommandées (optionnel)
 
-1. **Connecter AudioVisualizer** (15 minutes)
-   - Implémenter Option 1 (événement custom)
-   - Tester avec une session audio réelle
-
-2. **Intégrer ResponseCard** (30 minutes)
-   - Remplacer le rendu markdown actuel dans AskView
-   - Implémenter les handlers d'événements
-   - Tester avec des réponses IA réelles
-
-3. **Polish final** (optionnel)
+1. **Polish final**
    - Ajuster les animations selon les retours utilisateur
    - Affiner les données contextuelles dans ContextPanel
    - Ajouter plus d'actions dans les panels

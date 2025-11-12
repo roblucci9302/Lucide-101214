@@ -662,6 +662,22 @@ export class MainHeader extends LitElement {
             };
             window.api.mainHeader.onShortcutsUpdated(this._shortcutListener);
         }
+
+        // Listen for audio stream ready event from listenCapture.js
+        this._audioStreamReadyListener = (event) => {
+            const { stream, audioContext } = event.detail;
+            console.log('[MainHeader] Audio stream ready, initializing visualizer');
+
+            // Initialize AudioVisualizer with the real audio stream
+            this.updateComplete.then(() => {
+                const visualizer = this.shadowRoot.querySelector('audio-visualizer');
+                if (visualizer) {
+                    visualizer.initializeAnalyser(stream, audioContext);
+                    console.log('[MainHeader] AudioVisualizer initialized with real audio stream');
+                }
+            });
+        };
+        window.addEventListener('audio-stream-ready', this._audioStreamReadyListener);
     }
 
     disconnectedCallback() {
@@ -680,6 +696,11 @@ export class MainHeader extends LitElement {
             if (this._shortcutListener) {
                 window.api.mainHeader.removeOnShortcutsUpdated(this._shortcutListener);
             }
+        }
+
+        // Remove audio stream listener
+        if (this._audioStreamReadyListener) {
+            window.removeEventListener('audio-stream-ready', this._audioStreamReadyListener);
         }
     }
 

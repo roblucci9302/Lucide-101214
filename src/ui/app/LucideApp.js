@@ -4,6 +4,12 @@ import { ListenView } from '../listen/ListenView.js';
 import { AskView } from '../ask/AskView.js';
 import { ShortcutSettingsView } from '../settings/ShortCutSettingsView.js';
 
+// Import Zen Layout components
+import { ZenLayout } from '../components/ZenLayout.js';
+import { ZenConversation } from '../components/ZenConversation.js';
+import { ZenInput } from '../components/ZenInput.js';
+import { ZenContextPanel } from '../components/ZenContextPanel.js';
+
 import '../listen/audioCore/renderer.js';
 
 export class LucideApp extends LitElement {
@@ -45,7 +51,8 @@ export class LucideApp extends LitElement {
         layoutMode: { type: String },
         _viewInstances: { type: Object, state: true },
         _isClickThrough: { state: true },
-        structuredData: { type: Object }, 
+        structuredData: { type: Object },
+        useZenLayout: { type: Boolean } // New property for Zen mode
     };
 
     constructor() {
@@ -54,7 +61,7 @@ export class LucideApp extends LitElement {
         this.currentView = urlParams.get('view') || 'listen';
         this.currentResponseIndex = -1;
         this.selectedProfile = localStorage.getItem('selectedProfile') || 'lucide_assistant';
-        
+
         // Language format migration for legacy users
         let lang = localStorage.getItem('selectedLanguage') || 'en';
         if (lang.includes('-')) {
@@ -68,6 +75,10 @@ export class LucideApp extends LitElement {
         this.selectedScreenshotInterval = localStorage.getItem('selectedScreenshotInterval') || '5';
         this.selectedImageQuality = localStorage.getItem('selectedImageQuality') || 'medium';
         this._isClickThrough = false;
+
+        // Initialize Zen Layout mode (default: true for new design)
+        const savedZenMode = localStorage.getItem('useZenLayout');
+        this.useZenLayout = savedZenMode !== null ? savedZenMode === 'true' : true;
 
     }
 
@@ -115,6 +126,9 @@ export class LucideApp extends LitElement {
         if (changedProperties.has('layoutMode')) {
             this.updateLayoutMode();
         }
+        if (changedProperties.has('useZenLayout')) {
+            localStorage.setItem('useZenLayout', this.useZenLayout.toString());
+        }
     }
 
     async handleClose() {
@@ -129,12 +143,20 @@ export class LucideApp extends LitElement {
     render() {
         switch (this.currentView) {
             case 'listen':
-                return html`<listen-view
-                    .currentResponseIndex=${this.currentResponseIndex}
-                    .selectedProfile=${this.selectedProfile}
-                    .structuredData=${this.structuredData}
-                    @response-index-changed=${e => (this.currentResponseIndex = e.detail.index)}
-                ></listen-view>`;
+                // Use Zen Layout if enabled, otherwise fallback to classic ListenView
+                if (this.useZenLayout) {
+                    return html`<zen-layout
+                        .selectedProfile=${this.selectedProfile}
+                        .structuredData=${this.structuredData}
+                    ></zen-layout>`;
+                } else {
+                    return html`<listen-view
+                        .currentResponseIndex=${this.currentResponseIndex}
+                        .selectedProfile=${this.selectedProfile}
+                        .structuredData=${this.structuredData}
+                        @response-index-changed=${e => (this.currentResponseIndex = e.detail.index)}
+                    ></listen-view>`;
+                }
             case 'ask':
                 return html`<ask-view></ask-view>`;
             case 'settings':
@@ -143,6 +165,8 @@ export class LucideApp extends LitElement {
                     .selectedLanguage=${this.selectedLanguage}
                     .onProfileChange=${profile => (this.selectedProfile = profile)}
                     .onLanguageChange=${lang => (this.selectedLanguage = lang)}
+                    .useZenLayout=${this.useZenLayout}
+                    .onZenLayoutChange=${enabled => (this.useZenLayout = enabled)}
                 ></settings-view>`;
             case 'shortcut-settings':
                 return html`<shortcut-settings-view></shortcut-settings-view>`;

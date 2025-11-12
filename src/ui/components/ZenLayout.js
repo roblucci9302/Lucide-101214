@@ -2,6 +2,11 @@ import { html, css, LitElement } from '../assets/lit-core-2.7.4.min.js';
 import './ZenConversation.js';
 import './ZenInput.js';
 import './ZenContextPanel.js';
+import './ZenCommandPalette.js';
+import './ZenTabs.js';
+import './ZenMemoryPanel.js';
+import themeManager from '../../services/ThemeManager.js';
+import keyboardShortcutsManager from '../../services/KeyboardShortcutsManager.js';
 
 /**
  * ZenLayout - Container principal de l'interface Lucide Zen
@@ -26,9 +31,13 @@ export class ZenLayout extends LitElement {
         messages: { type: Array },
         contextData: { type: Object },
         showContextPanel: { type: Boolean },
+        showMemoryPanel: { type: Boolean },
+        showCommandPalette: { type: Boolean },
         isProcessing: { type: Boolean },
         selectedProfile: { type: String },
-        activeTab: { type: String }
+        activeTab: { type: String },
+        tabs: { type: Array },
+        activeTabId: { type: String }
     };
 
     static styles = css`
@@ -417,9 +426,25 @@ export class ZenLayout extends LitElement {
         this.messages = [];
         this.contextData = null;
         this.showContextPanel = true;
+        this.showMemoryPanel = false;
+        this.showCommandPalette = false;
         this.isProcessing = false;
         this.selectedProfile = localStorage.getItem('selectedProfile') || 'lucide_assistant';
         this.activeTab = 'conversation';
+
+        // Phase 2: Multi-tabs support
+        this.tabs = [
+            {
+                id: '1',
+                icon: '✨',
+                title: 'Nouvelle conversation',
+                subtitle: 'Conversation active',
+                status: 'active',
+                badge: 0,
+                closable: false
+            }
+        ];
+        this.activeTabId = '1';
     }
 
     connectedCallback() {
@@ -428,6 +453,10 @@ export class ZenLayout extends LitElement {
         // Listen for keyboard shortcuts
         this._keydownHandler = this.handleKeyDown.bind(this);
         window.addEventListener('keydown', this._keydownHandler);
+
+        // Phase 2: Listen for keyboard shortcut events
+        this._shortcutHandler = this.handleShortcutEvent.bind(this);
+        document.addEventListener('keyboard-shortcut', this._shortcutHandler);
 
         // Listen for IPC events if available
         if (window.api) {
@@ -448,6 +477,9 @@ export class ZenLayout extends LitElement {
         super.disconnectedCallback();
         if (this._keydownHandler) {
             window.removeEventListener('keydown', this._keydownHandler);
+        }
+        if (this._shortcutHandler) {
+            document.removeEventListener('keyboard-shortcut', this._shortcutHandler);
         }
     }
 
@@ -480,12 +512,83 @@ export class ZenLayout extends LitElement {
     }
 
     openCommandPalette() {
-        // Future: Open command palette for quick actions
-        console.log('[ZenLayout] Command Palette (future feature)');
+        this.showCommandPalette = true;
+        this.requestUpdate();
+    }
+
+    closeCommandPalette() {
+        this.showCommandPalette = false;
+        this.requestUpdate();
     }
 
     toggleContextPanel() {
         this.showContextPanel = !this.showContextPanel;
+    }
+
+    toggleMemoryPanel() {
+        this.showMemoryPanel = !this.showMemoryPanel;
+    }
+
+    // Phase 2: Handle keyboard shortcut events
+    handleShortcutEvent(e) {
+        const { action, data } = e.detail;
+
+        switch (action) {
+            case 'open-command-palette':
+                this.openCommandPalette();
+                break;
+
+            case 'new-conversation':
+                this.handleNewConversation();
+                break;
+
+            case 'toggle-context':
+                this.toggleContextPanel();
+                break;
+
+            case 'toggle-memory':
+                this.toggleMemoryPanel();
+                break;
+
+            case 'toggle-theme':
+                themeManager.toggleTheme();
+                break;
+
+            case 'change-profile':
+                this.handleChangeProfile(data.profileId);
+                break;
+
+            case 'escape':
+                this.handleEscape();
+                break;
+
+            default:
+                console.log('[ZenLayout] Unhandled shortcut action:', action);
+        }
+    }
+
+    handleNewConversation() {
+        // Reset current conversation
+        this.messages = [];
+        this.state = ZenLayout.STATES.ACTIVE;
+        console.log('[ZenLayout] New conversation started');
+    }
+
+    handleChangeProfile(profileId) {
+        this.selectedProfile = profileId;
+        localStorage.setItem('selectedProfile', profileId);
+        console.log('[ZenLayout] Profile changed to:', profileId);
+    }
+
+    handleEscape() {
+        // Close any open panels/modals
+        if (this.showCommandPalette) {
+            this.closeCommandPalette();
+        } else if (this.showMemoryPanel) {
+            this.showMemoryPanel = false;
+        } else if (this.showContextPanel) {
+            this.showContextPanel = false;
+        }
     }
 
     handleNewMessage(event) {
@@ -551,6 +654,15 @@ export class ZenLayout extends LitElement {
     renderActiveState() {
         return html`
             <div class="zen-active">
+                <!-- Phase 2: Tabs -->
+                <zen-tabs
+                    .tabs="${this.tabs}"
+                    .activeTabId="${this.activeTabId}"
+                    @tab-changed="${(e) => { this.activeTabId = e.detail.tabId; }}"
+                    @tab-added="${(e) => { this.tabs = [...this.tabs]; }}"
+                    @tab-closed="${(e) => { this.tabs = this.tabs.filter(t => t.id !== e.detail.tabId); }}">
+                </zen-tabs>
+
                 <!-- Header -->
                 <div class="zen-header">
                     <div class="zen-header-left">
@@ -565,8 +677,14 @@ export class ZenLayout extends LitElement {
                     <div class="zen-header-actions">
                         <button
                             class="zen-action-btn"
+                            @click="${this.toggleMemoryPanel}"
+                            title="Toggle memory panel (⌘M)">
+                            ${this.showMemoryPanel ? '🧠' : '💭'} Mémoire
+                        </button>
+                        <button
+                            class="zen-action-btn"
                             @click="${this.toggleContextPanel}"
-                            title="Toggle context panel">
+                            title="Toggle context panel (⌘B)">
                             ${this.showContextPanel ? '→' : '←'} Contexte
                         </button>
                     </div>
@@ -608,8 +726,13 @@ export class ZenLayout extends LitElement {
                         </div>
                     </div>
 
-                    <!-- Context Panel -->
-                    ${this.showContextPanel ? html`
+                    <!-- Phase 2: Memory Panel or Context Panel -->
+                    ${this.showMemoryPanel ? html`
+                        <div class="zen-context-panel">
+                            <zen-memory-panel>
+                            </zen-memory-panel>
+                        </div>
+                    ` : this.showContextPanel ? html`
                         <div class="zen-context-panel">
                             <zen-context-panel
                                 .contextData="${this.contextData}"
@@ -629,8 +752,22 @@ export class ZenLayout extends LitElement {
             <div class="zen-container ${isActive ? 'active' : ''}">
                 ${this.renderIdleState()}
                 ${this.renderActiveState()}
+
+                <!-- Phase 2: Command Palette -->
+                <zen-command-palette
+                    ?open="${this.showCommandPalette}"
+                    @command-executed="${this.handleCommandExecuted}">
+                </zen-command-palette>
             </div>
         `;
+    }
+
+    handleCommandExecuted(e) {
+        const { command } = e.detail;
+        console.log('[ZenLayout] Command executed:', command);
+
+        // Close palette after execution
+        this.closeCommandPalette();
     }
 }
 

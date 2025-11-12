@@ -429,6 +429,7 @@ export class ListenView extends LitElement {
         captureStartTime: { type: Number },
         isSessionActive: { type: Boolean },
         hasCompletedRecording: { type: Boolean },
+        showContextPanel: { type: Boolean },
     };
 
     constructor() {
@@ -445,6 +446,7 @@ export class ListenView extends LitElement {
         this.isThrottled = false;
         this.copyState = 'idle';
         this.copyTimeout = null;
+        this.showContextPanel = true;
 
         this.adjustWindowHeight = this.adjustWindowHeight.bind(this);
     }
@@ -619,6 +621,61 @@ export class ListenView extends LitElement {
         }, 16);
     }
 
+    getContextPanelData() {
+        // Retourner les données appropriées selon le mode et l'état
+        if (this.isSessionActive) {
+            if (this.viewMode === 'transcript') {
+                return {
+                    type: 'temporal',
+                    title: 'Transcription en direct',
+                    message: 'Lucide capture et transcrit votre audio en temps réel.',
+                    actions: [
+                        { label: 'Voir les analyses', value: 'show-insights' }
+                    ]
+                };
+            } else if (this.viewMode === 'suggestions') {
+                return {
+                    type: 'suggestion',
+                    title: 'Suggestions contextuelles',
+                    message: 'Lucide analyse le contexte pour vous proposer des réponses pertinentes.',
+                    actions: []
+                };
+            } else {
+                return {
+                    type: 'discovery',
+                    title: 'Analyses en temps réel',
+                    message: 'Lucide analyse votre conversation et génère des insights automatiquement.',
+                    actions: []
+                };
+            }
+        } else if (this.hasCompletedRecording) {
+            return {
+                type: 'suggestion',
+                title: 'Enregistrement terminé',
+                message: 'Vous pouvez consulter la transcription, les analyses et les suggestions.',
+                actions: [
+                    { label: 'Nouvelle session', value: 'new-session' }
+                ]
+            };
+        }
+
+        return null;
+    }
+
+    handleContextPanelAction(event) {
+        const { action } = event.detail;
+
+        if (action === 'show-insights') {
+            this.viewMode = 'insights';
+            this.requestUpdate();
+        } else if (action === 'new-session') {
+            // Déclencher une nouvelle session via l'API
+            if (window.api) {
+                window.api.mainHeader.toggleListenSession();
+            }
+        }
+    }
+
     updated(changedProperties) {
         super.updated(changedProperties);
 
@@ -690,6 +747,18 @@ export class ListenView extends LitElement {
                         </button>
                     </div>
                 </div>
+
+                ${this.showContextPanel && this.getContextPanelData()
+                    ? html`
+                        <context-panel
+                            .type=${this.getContextPanelData().type}
+                            .title=${this.getContextPanelData().title}
+                            .message=${this.getContextPanelData().message}
+                            .actions=${this.getContextPanelData().actions}
+                            @action-click=${this.handleContextPanelAction}
+                        ></context-panel>
+                    `
+                    : ''}
 
                 <stt-view
                     .isVisible=${this.viewMode === 'transcript'}

@@ -16,6 +16,7 @@ export class AskView extends LitElement {
         headerText: { type: String },
         headerAnimating: { type: Boolean },
         isStreaming: { type: Boolean },
+        showContextPanel: { type: Boolean },
     };
 
     static styles = css`
@@ -723,6 +724,7 @@ export class AskView extends LitElement {
         this.headerText = 'AI Response';
         this.headerAnimating = false;
         this.isStreaming = false;
+        this.showContextPanel = true;
 
         this.marked = null;
         this.hljs = null;
@@ -1355,6 +1357,45 @@ export class AskView extends LitElement {
 
 
 
+    getContextPanelData() {
+        // Afficher le panel contextuel selon l'état
+        if (this.isLoading) {
+            return {
+                type: 'temporal',
+                title: 'Réflexion en cours',
+                message: 'Lucide analyse votre question et prépare une réponse détaillée.',
+                actions: []
+            };
+        } else if (this.isStreaming) {
+            return {
+                type: 'discovery',
+                title: 'Réponse en streaming',
+                message: 'La réponse est générée en temps réel pour une expérience fluide.',
+                actions: []
+            };
+        } else if (!this.currentResponse && !this.currentQuestion) {
+            return {
+                type: 'suggestion',
+                title: 'Posez une question',
+                message: 'Interrogez Lucide sur votre écran, vos documents ou votre session audio.',
+                actions: [
+                    { label: 'Workflows', value: 'show-workflows' }
+                ]
+            };
+        }
+
+        return null;
+    }
+
+    handleContextPanelAction(event) {
+        const { action } = event.detail;
+
+        if (action === 'show-workflows') {
+            // Les workflows sont déjà visibles via QuickActionsPanel
+            console.log('[AskView] Workflows already visible');
+        }
+    }
+
     render() {
         const hasResponse = this.isLoading || this.currentResponse || this.isStreaming;
         const headerText = this.isLoading ? 'Réflexion...' : 'Réponse IA';
@@ -1401,6 +1442,19 @@ export class AskView extends LitElement {
                         </div>
                     </div>
                 </div>
+
+                <!-- Context Panel -->
+                ${this.showContextPanel && this.getContextPanelData()
+                    ? html`
+                        <context-panel
+                            .type=${this.getContextPanelData().type}
+                            .title=${this.getContextPanelData().title}
+                            .message=${this.getContextPanelData().message}
+                            .actions=${this.getContextPanelData().actions}
+                            @action-click=${this.handleContextPanelAction}
+                        ></context-panel>
+                    `
+                    : ''}
 
                 <!-- Response Container -->
                 <div class="response-container ${!hasResponse ? 'hidden' : ''}" id="responseContainer">

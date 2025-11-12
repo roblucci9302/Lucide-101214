@@ -2,6 +2,7 @@ import { html, css, LitElement } from '../../ui/assets/lit-core-2.7.4.min.js';
 import { parser, parser_write, parser_end, default_renderer } from '../../ui/assets/smd.js';
 import './QuickActionsPanel.js';
 import '../components/ContextPanel.js';
+import '../components/ResponseCard.js';
 
 export class AskView extends LitElement {
     static properties = {
@@ -17,6 +18,7 @@ export class AskView extends LitElement {
         headerAnimating: { type: Boolean },
         isStreaming: { type: Boolean },
         showContextPanel: { type: Boolean },
+        useResponseCard: { type: Boolean },
     };
 
     static styles = css`
@@ -725,6 +727,7 @@ export class AskView extends LitElement {
         this.headerAnimating = false;
         this.isStreaming = false;
         this.showContextPanel = true;
+        this.useResponseCard = true; // Use ResponseCard for completed responses
 
         this.marked = null;
         this.hljs = null;
@@ -933,6 +936,34 @@ export class AskView extends LitElement {
         if (!this.currentResponse && !this.isLoading && !this.isStreaming) {
             this.handleCloseAskWindow();
         }
+    }
+
+    // ResponseCard event handlers
+    handleResponseCardFeedback(event) {
+        const { type, timestamp } = event.detail;
+        console.log('[AskView] Response feedback:', type, timestamp);
+
+        // TODO: Send feedback to backend
+        // window.api.askView.sendFeedback({ type, question: this.currentQuestion, response: this.currentResponse });
+    }
+
+    handleSourceClick(event) {
+        const { source } = event.detail;
+        console.log('[AskView] Source clicked:', source);
+
+        // TODO: Open the source document
+        // window.api.askView.openSource(source);
+    }
+
+    handleResponseCardCopy(event) {
+        const { content } = event.detail;
+        console.log('[AskView] Content copied from ResponseCard');
+        // ResponseCard handles clipboard internally
+    }
+
+    handleResponseCardDelete(event) {
+        console.log('[AskView] Delete response requested');
+        this.clearResponseContent();
     }
 
     handleEscKey(e) {
@@ -1456,10 +1487,25 @@ export class AskView extends LitElement {
                     `
                     : ''}
 
-                <!-- Response Container -->
-                <div class="response-container ${!hasResponse ? 'hidden' : ''}" id="responseContainer">
-                    <!-- Content is dynamically generated in updateResponseContent() -->
-                </div>
+                <!-- Response Container: use ResponseCard for completed responses, or legacy container for streaming -->
+                ${this.useResponseCard && !this.isStreaming && !this.isLoading && this.currentResponse
+                    ? html`
+                        <response-card
+                            .content=${this.currentResponse}
+                            .sources=${[]}
+                            .streaming=${false}
+                            .timestamp=${Date.now()}
+                            @feedback=${this.handleResponseCardFeedback}
+                            @source-click=${this.handleSourceClick}
+                            @copy=${this.handleResponseCardCopy}
+                            @delete=${this.handleResponseCardDelete}
+                        ></response-card>
+                    `
+                    : html`
+                        <div class="response-container ${!hasResponse ? 'hidden' : ''}" id="responseContainer">
+                            <!-- Content is dynamically generated during streaming -->
+                        </div>
+                    `}
 
                 <!-- Quick Actions Panel (Phase 3: Workflows) - Only shown when no response -->
                 ${!hasResponse ? html`<quick-actions-panel></quick-actions-panel>` : ''}

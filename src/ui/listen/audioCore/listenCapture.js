@@ -296,9 +296,17 @@ async function setupMicProcessing(micStream) {
 
 
     const micAudioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
-    await micAudioContext.resume(); 
+    await micAudioContext.resume();
     const micSource = micAudioContext.createMediaStreamSource(micStream);
     const micProcessor = micAudioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+
+    // Notify AudioVisualizer that stream is ready
+    window.dispatchEvent(new CustomEvent('audio-stream-ready', {
+        detail: {
+            stream: micStream,
+            audioContext: micAudioContext
+        }
+    }));
 
     let audioBuffer = [];
     const samplesPerChunk = SAMPLE_RATE * AUDIO_CHUNK_DURATION;
@@ -347,6 +355,14 @@ function setupLinuxMicProcessing(micStream) {
     const micAudioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
     const micSource = micAudioContext.createMediaStreamSource(micStream);
     const micProcessor = micAudioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+
+    // Notify AudioVisualizer that stream is ready
+    window.dispatchEvent(new CustomEvent('audio-stream-ready', {
+        detail: {
+            stream: micStream,
+            audioContext: micAudioContext
+        }
+    }));
 
     let audioBuffer = [];
     const samplesPerChunk = SAMPLE_RATE * AUDIO_CHUNK_DURATION;

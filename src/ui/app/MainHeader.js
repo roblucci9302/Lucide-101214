@@ -58,7 +58,7 @@ export class MainHeader extends LitElement {
         .header {
             -webkit-app-region: drag;
             width: auto;
-            min-width: 405px;
+            min-width: 520px; /* ✅ AUGMENTÉ de 405px à 520px pour garantir visibilité de tous les boutons */
             height: 47px;
             padding: 2px 12px;
             background: transparent;

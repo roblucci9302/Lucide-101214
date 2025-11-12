@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucide - Choisissez votre design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 20px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .proposals {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .proposal-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .proposal-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            border-radius: 24px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .proposal-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .proposal-card:hover::before {
+            opacity: 1;
+        }
+
+        .proposal-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .proposal-card:nth-child(2) .proposal-icon {
+            animation-delay: 0.5s;
+        }
+
+        .proposal-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .proposal-tagline {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .proposal-description {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+
+        .features {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .features li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .comparison {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            margin-top: 40px;
+        }
+
+        .comparison h2 {
+            font-size: 28px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            font-weight: 600;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        td {
+            opacity: 0.8;
+        }
+
+        .rating {
+            color: #fbbf24;
+        }
+
+        @media (max-width: 1100px) {
+            .proposals {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .zen-preview {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(139, 92, 246, 0.1));
+        }
+
+        .command-preview {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(14, 165, 233, 0.1));
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✨ Lucide - Choisissez votre interface</h1>
+            <p class="subtitle">Deux visions, une même excellence</p>
+        </header>
+
+        <div class="proposals">
+            <!-- Zen Proposal -->
+            <div class="proposal-card zen-preview">
+                <span class="proposal-icon">🧘</span>
+                <h2 class="proposal-title">Lucide Zen</h2>
+                <p class="proposal-tagline">"Silence intelligent, présence subtile"</p>
+
+                <p class="proposal-description">
+                    L'assistant qui disparaît quand vous n'en avez pas besoin. Interface minimaliste,
+                    élégante, qui respire avec vous. Command Palette pour productivité, Timeline pour
+                    la mémoire.
+                </p>
+
+                <ul class="features">
+                    <li>Interface minimale et discrète</li>
+                    <li>Command Palette (⌘K)</li>
+                    <li>Timeline de mémoire intuitive</li>
+                    <li>Mobile-first, responsive</li>
+                    <li>Animations douces et naturelles</li>
+                    <li>Learning curve: 5 minutes</li>
+                </ul>
+
+                <a href="zen.html" class="cta-button">
+                    Voir le prototype →
+                </a>
+            </div>
+
+            <!-- Command Proposal -->
+            <div class="proposal-card command-preview">
+                <span class="proposal-icon">⚡</span>
+                <h2 class="proposal-title">Lucide Command</h2>
+                <p class="proposal-tagline">"Toute votre cognition, sous contrôle"</p>
+
+                <p class="proposal-description">
+                    Centre de commande cognitif. Layout 3-panel avec toute l'information visible.
+                    Multi-tasking, tabs, knowledge graph. Pour power users qui veulent tout contrôler.
+                </p>
+
+                <ul class="features">
+                    <li>Layout 3-panel (Mémoire, Chat, Contexte)</li>
+                    <li>Multi-conversation avec tabs</li>
+                    <li>Knowledge graph interactif</li>
+                    <li>Panels resizable</li>
+                    <li>Shortcuts clavier avancés</li>
+                    <li>Information density maximale</li>
+                </ul>
+
+                <a href="command.html" class="cta-button">
+                    Voir le prototype →
+                </a>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <h2>📊 Comparaison rapide</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Critère</th>
+                        <th>🧘 Zen</th>
+                        <th>⚡ Command</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Simplicité</td>
+                        <td class="rating">⭐⭐⭐⭐⭐</td>
+                        <td class="rating">⭐⭐</td>
+                    </tr>
+                    <tr>
+                        <td>Puissance</td>
+                        <td class="rating">⭐⭐⭐</td>
+                        <td class="rating">⭐⭐⭐⭐⭐</td>
+                    </tr>
+                    <tr>
+                        <td>Mobile</td>
+                        <td>✅ Excellent</td>
+                        <td>❌ Desktop only</td>
+                    </tr>
+                    <tr>
+                        <td>Learning curve</td>
+                        <td>5 minutes</td>
+                        <td>1-2 heures</td>
+                    </tr>
+                    <tr>
+                        <td>Utilisateurs cibles</td>
+                        <td>Tous (novice → expert)</td>
+                        <td>Power users uniquement</td>
+                    </tr>
+                    <tr>
+                        <td>MVP dev time</td>
+                        <td>4 semaines</td>
+                        <td>6 semaines</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>Cliquez sur "Voir le prototype" pour explorer chaque design en détail</p>
+            <p style="margin-top: 8px;">Design par Claude × Lucide Team • 2025</p>
+        </footer>
+    </div>
+</body>
+</html>
